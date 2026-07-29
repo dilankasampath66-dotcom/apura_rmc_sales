@@ -570,6 +570,7 @@ class Database {
         this.data.concreteGrades = JSON.parse(JSON.stringify(initialSeedData.concreteGrades || []));
       }
     }
+    this.data.concreteGrades = this.data.concreteGrades.filter(g => g && typeof g === 'object' && g.grade_name);
     return this.data.concreteGrades;
   }
 
@@ -593,7 +594,12 @@ class Database {
     const cleanName = String(grade_name).trim().toUpperCase();
     const cleanPrice = Math.max(0, Number(base_price_lkr) || 0);
 
-    const grades = this.getGrades();
+    let grades = this.getGrades();
+    if (!Array.isArray(grades)) {
+      grades = Object.values(grades || {});
+    }
+    grades = grades.filter(g => g && typeof g === 'object' && g.grade_name);
+
     const existing = grades.find(g => g && g.grade_name && String(g.grade_name).trim().toUpperCase() === cleanName);
     if (existing) {
       existing.base_price_lkr = cleanPrice;

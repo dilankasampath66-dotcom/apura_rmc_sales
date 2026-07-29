@@ -486,7 +486,11 @@ function bindExcelExportButtons() {
  * Dynamic Concrete Grade Dropdown Populator & Live Price Recall
  */
 function populateGradeDropdowns() {
-  const grades = window.db.getGrades();
+  let grades = window.db.getGrades();
+  if (!Array.isArray(grades)) {
+    grades = Object.values(grades || {});
+  }
+  grades = grades.filter(g => g && typeof g === 'object' && g.grade_name);
   const dropdowns = ['visit-grade', 'quote-grade'];
 
   dropdowns.forEach(id => {
@@ -494,9 +498,9 @@ function populateGradeDropdowns() {
     if (el) {
       const selectedVal = el.value;
       el.innerHTML = grades.map(g => `
-        <option value="${g.grade_name}">${g.grade_name} (Base: LKR ${g.base_price_lkr.toLocaleString()}/m³)</option>
+        <option value="${g.grade_name}">${g.grade_name} (Base Price: LKR ${(Number(g.base_price_lkr) || 0).toLocaleString()}/m³)</option>
       `).join('');
-      if (selectedVal && grades.some(g => g.grade_name === selectedVal)) {
+      if (selectedVal && grades.some(g => g && g.grade_name === selectedVal)) {
         el.value = selectedVal;
       }
     }
