@@ -531,7 +531,8 @@ function bindManagerGradeHandlers() {
     formGrade.addEventListener('submit', (e) => {
       e.preventDefault();
 
-      if (currentRole !== 'Manager' && currentRole !== 'Admin') {
+      const roleStr = String(window.currentRole || currentRole || '').toLowerCase();
+      if (!roleStr.includes('manager') && !roleStr.includes('admin')) {
         showToast('PERMISSION DENIED: Only Manager or Admin can configure concrete grades.', 'error');
         return;
       }
@@ -1782,20 +1783,28 @@ function renderQuotationScreen() {
 }
 
 function renderGradesManagerList() {
-  const grades = window.db.getGrades();
+  let grades = window.db.getGrades();
+  if (!Array.isArray(grades)) {
+    grades = Object.values(grades || {});
+  }
   const container = document.getElementById('grades-list-container');
-  const canManage = currentRole === 'Manager' || currentRole === 'Admin';
+  const roleStr = String(window.currentRole || currentRole || '').toLowerCase();
+  const canManage = roleStr.includes('manager') || roleStr.includes('admin');
 
   if (container) {
+    if (!grades || grades.length === 0) {
+      container.innerHTML = `<span class="text-slate-400 italic text-xs py-1">No concrete grades configured. Use the form above to add your first grade profile.</span>`;
+      return;
+    }
     container.innerHTML = grades.map(g => `
       <div class="flex items-center space-x-2 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-2xs font-semibold">
-        <span class="text-slate-900 font-bold">${g.grade_name}</span>
-        <span class="text-emerald-700 font-mono">LKR ${g.base_price_lkr.toLocaleString()}/m³</span>
+        <span class="text-slate-900 font-bold">${g.grade_name || 'N/A'}</span>
+        <span class="text-emerald-700 font-mono">LKR ${(Number(g.base_price_lkr) || 0).toLocaleString()}/m³</span>
         ${canManage ? `
-          <button onclick="editConcreteGradeEntry(${g.id})" title="Edit Grade & Price" class="text-blue-600 hover:text-blue-800 transition ml-1 cursor-pointer font-bold text-xs">
+          <button type="button" onclick="editConcreteGradeEntry(${g.id})" title="Edit Grade & Price" class="text-blue-600 hover:text-blue-800 transition ml-1 cursor-pointer font-bold text-xs">
             <i class="fa-solid fa-pen-to-square"></i>
           </button>
-          <button onclick="deleteConcreteGradeEntry(${g.id})" title="Delete Grade" class="text-slate-400 hover:text-red-600 transition ml-1 cursor-pointer font-bold">
+          <button type="button" onclick="deleteConcreteGradeEntry(${g.id})" title="Delete Grade" class="text-slate-400 hover:text-red-600 transition ml-1 cursor-pointer font-bold">
             &times;
           </button>
         ` : ''}

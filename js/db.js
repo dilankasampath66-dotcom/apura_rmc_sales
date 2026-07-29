@@ -343,9 +343,16 @@ class Database {
     if (!data || typeof data !== 'object') {
       data = JSON.parse(JSON.stringify(initialSeedData));
     }
-    if (!data.concreteGrades) {
-      data.concreteGrades = JSON.parse(JSON.stringify(initialSeedData.concreteGrades));
+    
+    // Ensure concreteGrades is a valid Array (Firebase RTDB turns arrays into objects)
+    if (!data.concreteGrades || !Array.isArray(data.concreteGrades)) {
+      if (data.concreteGrades && typeof data.concreteGrades === 'object') {
+        data.concreteGrades = Object.values(data.concreteGrades);
+      } else {
+        data.concreteGrades = JSON.parse(JSON.stringify(initialSeedData.concreteGrades));
+      }
     }
+
     if (!data.pricingConfig || data.pricingConfig.pump_car_transport_rate_per_km_lkr === 150) {
       data.pricingConfig = JSON.parse(JSON.stringify(initialSeedData.pricingConfig));
     }
@@ -488,9 +495,8 @@ class Database {
       this.fbRef.child(nodeKey).set(this.data[nodeKey]).catch(err => {
         console.warn(`Granular Firebase write failed for ${nodeKey}:`, err);
       });
-    } else {
-      this.notifyUI();
     }
+    this.notifyUI();
   }
 
   save() {
