@@ -324,18 +324,31 @@ body {
 }
 
 /* MOBILE RESPONSIVE SPECIFIC OVERRIDES FOR IPHONE 15 & REDMI C13 */
+.safe-bottom-nav {
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 12px));
+  padding-top: 0.4rem;
+}
+
+.safe-content-pb {
+  padding-bottom: max(5.5rem, calc(4.5rem + env(safe-area-inset-bottom, 12px))) !important;
+}
+
 @media (max-width: 767px) {
   body {
-    padding-bottom: 4rem;
+    touch-action: manipulation;
   }
 
   main {
-    padding-bottom: 5rem !important;
+    padding-bottom: 5.5rem !important;
   }
 
-  input, select, textarea, button {
-    min-height: 44px;
-    font-size: 14px !important;
+  input, select, textarea {
+    font-size: 13px !important;
+    line-height: 1.3 !important;
+  }
+
+  button {
+    touch-action: manipulation;
   }
 
   .btn-excel-sm, .btn-db-download {

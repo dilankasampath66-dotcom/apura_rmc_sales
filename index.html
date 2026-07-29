@@ -28,52 +28,52 @@
 
   <!-- TOP HEADER & ROLE SWITCHER -->
   <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
-    <div class="max-w-7xl mx-auto px-3 sm:px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 sm:gap-4">
-      <div class="flex items-center space-x-2.5">
+    <div class="max-w-7xl mx-auto px-3 sm:px-4 py-2 flex flex-wrap items-center justify-between gap-2">
+      <div class="flex items-center space-x-2">
         <!-- Mobile Menu Toggle Hamburger (Visible on Mobile) -->
         <button id="btn-mobile-menu" onclick="toggleMobileNavDrawer()" class="md:hidden p-1.5 text-slate-700 hover:text-red-600 focus:outline-none cursor-pointer border border-slate-200 rounded-lg shrink-0">
           <i class="fa-solid fa-bars text-base"></i>
         </button>
 
-        <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-lg tokyo-brand-badge flex items-center justify-center text-white font-black text-lg sm:text-xl shadow-md shrink-0">
+        <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg tokyo-brand-badge flex items-center justify-center text-white font-black text-base sm:text-xl shadow-md shrink-0">
           RM
         </div>
         <div>
-          <h1 class="text-sm sm:text-lg font-extrabold text-slate-900 leading-tight tracking-tight">
+          <h1 class="text-xs sm:text-lg font-extrabold text-slate-900 leading-tight tracking-tight">
             REGIONAL PLANT <span class="text-red-600 font-normal">RMC</span>
           </h1>
-          <p class="text-[10px] sm:text-xs text-slate-500 font-medium">Ready Mix Concrete Sales & Delivery Estimator</p>
+          <p class="text-[9px] sm:text-xs text-slate-500 font-medium hidden sm:block">Ready Mix Concrete Sales & Delivery Estimator</p>
         </div>
       </div>
 
-      <div class="flex flex-wrap items-center space-x-2 sm:space-x-2.5 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100">
+      <div class="flex items-center space-x-1.5 sm:space-x-2.5">
         <!-- FIREBASE CLOUD SYNC BADGE & CONFIG TRIGGER -->
-        <button id="btn-firebase-config" onclick="openFirebaseConfigModal()" class="flex items-center space-x-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 py-1.5 px-2.5 rounded-lg border border-slate-300 text-xs transition cursor-pointer" title="Firebase Cloud Database Connection Settings">
-          <i id="firebase-sync-icon" class="fa-solid fa-cloud text-amber-500"></i>
-          <span id="firebase-sync-status" class="font-semibold text-xs">Cloud Sync</span>
+        <button id="btn-firebase-config" onclick="openFirebaseConfigModal()" class="flex items-center space-x-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-1.5 px-2 rounded-lg border border-slate-300 text-xs transition cursor-pointer" title="Firebase Cloud Connection">
+          <i id="firebase-sync-icon" class="fa-solid fa-cloud text-amber-500 text-xs"></i>
+          <span id="firebase-sync-status" class="font-semibold text-xs hidden sm:inline">Cloud Sync</span>
         </button>
 
-        <!-- DOWNLOAD MASTER DATABASE BUTTON (JSON) -->
-        <button id="btn-download-master-db" class="btn-db-download text-xs cursor-pointer py-1.5 px-2.5" title="Download Complete Master Database JSON Backup">
+        <!-- DOWNLOAD MASTER DATABASE BUTTON (Visible on sm+) -->
+        <button id="btn-download-master-db" class="btn-db-download text-xs cursor-pointer py-1.5 px-2.5 hidden sm:inline-flex" title="Download Complete Master Database JSON Backup">
           <i class="fa-solid fa-database text-amber-400 text-xs"></i>
-          <span class="text-xs">Download Master DB</span>
+          <span class="text-xs">Master DB</span>
         </button>
 
-        <!-- IMPORT MASTER DATABASE FILE TRIGGER -->
+        <!-- IMPORT MASTER DATABASE FILE TRIGGER (Visible on md+) -->
         <input type="file" id="input-import-db" accept=".json" class="hidden" />
-        <button id="btn-trigger-import-db" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-1.5 px-2.5 rounded-lg border border-slate-300 text-xs transition cursor-pointer" title="Restore Master Database from Backup JSON">
+        <button id="btn-trigger-import-db" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-1.5 px-2.5 rounded-lg border border-slate-300 text-xs transition cursor-pointer hidden md:inline-flex" title="Restore Master Database">
           <i class="fa-solid fa-file-import text-slate-500 mr-1"></i>
-          <span class="text-xs">Restore DB</span>
+          <span class="text-xs">Restore</span>
         </button>
 
-        <!-- GLOBAL EXCEL EXPORT BUTTON -->
-        <button id="btn-export-full-excel" class="btn-excel text-xs cursor-pointer py-1.5 px-2.5">
+        <!-- GLOBAL EXCEL EXPORT BUTTON (Visible on sm+) -->
+        <button id="btn-export-full-excel" class="btn-excel text-xs cursor-pointer py-1.5 px-2.5 hidden sm:inline-flex">
           <i class="fa-solid fa-file-excel text-white text-xs"></i>
           <span class="text-xs">Excel Report</span>
         </button>
 
         <!-- Logged In User Profile & Logout -->
-        <div id="user-header-profile" class="flex items-center space-x-2 bg-slate-100 p-1 px-2.5 rounded-lg border border-slate-200">
+        <div id="user-header-profile" class="flex items-center space-x-1.5 bg-slate-100 p-1 px-2 rounded-lg border border-slate-200">
           <div class="w-6 h-6 rounded-full bg-red-600 text-white font-bold text-[11px] flex items-center justify-center shadow-xs" id="user-avatar-initials">
             A
           </div>
@@ -84,42 +84,42 @@
           <span id="active-role-badge" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700 border border-red-300">
             ADMIN
           </span>
-          <button id="btn-logout" onclick="logoutUser()" title="Sign Out of ERP System" class="bg-white hover:bg-red-50 text-slate-600 hover:text-red-600 border border-slate-300 p-1 px-2 rounded text-[11px] font-bold transition cursor-pointer ml-1">
-            <i class="fa-solid fa-right-from-bracket text-red-600"></i> <span class="hidden sm:inline">Logout</span>
+          <button id="btn-logout" onclick="logoutUser()" title="Sign Out of ERP System" class="bg-white hover:bg-red-50 text-slate-600 hover:text-red-600 border border-slate-300 p-1 px-1.5 rounded text-[11px] font-bold transition cursor-pointer">
+            <i class="fa-solid fa-right-from-bracket text-red-600"></i>
           </button>
         </div>
       </div>
     </div>
 
     <!-- TOP KPI SUMMARY STRIP -->
-    <div class="bg-slate-100/70 border-t border-slate-200 py-2 px-3 sm:px-4">
-      <div class="max-w-7xl mx-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 sm:gap-3 text-xs text-center">
-        <div class="bg-white p-1.5 sm:p-2 rounded border border-slate-200 shadow-2xs">
-          <span class="text-slate-500 block mb-0.5 font-medium text-[10px] sm:text-xs">Total Visits</span>
-          <span id="kpi-total-visits" class="text-sm sm:text-base font-extrabold text-slate-800">0</span>
+    <div class="bg-slate-100/70 border-t border-slate-200 py-1.5 px-2 sm:px-4">
+      <div class="max-w-7xl mx-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-1.5 sm:gap-3 text-xs text-center">
+        <div class="bg-white p-1.5 rounded-lg border border-slate-200 shadow-2xs">
+          <span class="text-slate-500 block mb-0.5 font-medium text-[10px]">Total Visits</span>
+          <span id="kpi-total-visits" class="text-xs sm:text-base font-extrabold text-slate-800">0</span>
         </div>
-        <div class="bg-white p-1.5 sm:p-2 rounded border border-slate-200 shadow-2xs">
-          <span class="text-slate-500 block mb-0.5 font-medium text-[10px] sm:text-xs">Total Leads</span>
-          <span id="kpi-total-leads" class="text-sm sm:text-base font-extrabold text-blue-600">0</span>
+        <div class="bg-white p-1.5 rounded-lg border border-slate-200 shadow-2xs">
+          <span class="text-slate-500 block mb-0.5 font-medium text-[10px]">Total Leads</span>
+          <span id="kpi-total-leads" class="text-xs sm:text-base font-extrabold text-blue-600">0</span>
         </div>
-        <div class="bg-white p-1.5 sm:p-2 rounded border border-slate-200 shadow-2xs">
-          <span class="text-slate-500 block mb-0.5 font-medium text-[10px] sm:text-xs">Conversion Rate</span>
-          <span id="kpi-conversion-rate" class="text-sm sm:text-base font-extrabold text-emerald-600">0.0%</span>
+        <div class="bg-white p-1.5 rounded-lg border border-slate-200 shadow-2xs">
+          <span class="text-slate-500 block mb-0.5 font-medium text-[10px]">Conversion Rate</span>
+          <span id="kpi-conversion-rate" class="text-xs sm:text-base font-extrabold text-emerald-600">0.0%</span>
         </div>
-        <div class="bg-white p-1.5 sm:p-2 rounded border border-slate-200 shadow-2xs">
-          <span class="text-slate-500 block mb-0.5 font-medium text-[10px] sm:text-xs">Volume Sold</span>
-          <span id="kpi-volume-sold" class="text-sm sm:text-base font-extrabold text-amber-600">0 m³</span>
+        <div class="bg-white p-1.5 rounded-lg border border-slate-200 shadow-2xs">
+          <span class="text-slate-500 block mb-0.5 font-medium text-[10px]">Volume Sold</span>
+          <span id="kpi-volume-sold" class="text-xs sm:text-base font-extrabold text-amber-600">0 m³</span>
         </div>
-        <div class="bg-white p-1.5 sm:p-2 rounded border border-slate-200 shadow-2xs col-span-2 sm:col-span-1">
-          <span class="text-slate-500 block mb-0.5 font-medium text-[10px] sm:text-xs">Total Revenue</span>
-          <span id="kpi-revenue" class="text-sm sm:text-base font-extrabold text-red-600">LKR 0</span>
+        <div class="bg-white p-1.5 rounded-lg border border-slate-200 shadow-2xs col-span-2 sm:col-span-1">
+          <span class="text-slate-500 block mb-0.5 font-medium text-[10px]">Total Revenue</span>
+          <span id="kpi-revenue" class="text-xs sm:text-base font-extrabold text-red-600">LKR 0</span>
         </div>
       </div>
     </div>
   </header>
 
   <!-- MAIN CONTAINER WITH SIDEBAR -->
-  <div class="flex-1 flex max-w-7xl w-full mx-auto">
+  <div class="flex-1 flex max-w-7xl w-full mx-auto safe-content-pb">
     <!-- LEFT SIDEBAR NAVIGATION (DESKTOP) -->
     <aside class="w-64 bg-white border-r border-slate-200 hidden md:block p-4">
       <nav class="space-y-1">
@@ -153,85 +153,67 @@
       </nav>
     </aside>
 
-    <!-- CONTENT VIEW PANELS -->
+    <!-- RIGHT CONTENT AREA -->
     <main class="flex-1 p-3 sm:p-6 overflow-y-auto">
-
-      <!-- VIEW 1: DASHBOARD -->
-      <section id="view-dashboard" class="view-panel space-y-4">
-        <!-- SALES PERFORMANCE ANALYZER TIMEFRAME SWITCHER -->
-        <div class="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-xl border border-slate-200 shadow-2xs">
-          <div class="flex items-center space-x-2">
-            <i class="fa-solid fa-chart-line text-red-600 text-sm"></i>
-            <span class="text-xs font-bold text-slate-900">Sales Performance Period Analysis:</span>
-          </div>
-          <div class="flex flex-wrap items-center gap-1.5" id="timeframe-selector-container">
-            <button data-timeframe="all" class="timeframe-pill active">All Time</button>
-            <button data-timeframe="weekly" class="timeframe-pill">Weekly (7 Days)</button>
-            <button data-timeframe="monthly" class="timeframe-pill">Monthly (30 Days)</button>
-            <button data-timeframe="yearly" class="timeframe-pill">Yearly (365 Days)</button>
-          </div>
-        </div>
-
-        <!-- AI Insights Banner Container -->
+      <!-- VIEW 1: DASHBOARD VIEW -->
+      <div id="view-dashboard" class="view-content space-y-6">
+        <!-- AI Pipeline Optimization Insights Banner -->
         <div id="dashboard-ai-insights"></div>
 
-        <!-- CHARTS GRID -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div class="glass-card p-4 sm:p-5">
-            <h3 class="text-sm font-bold text-slate-800 mb-4 flex items-center">
-              <i class="fa-solid fa-chart-doughnut text-red-600 mr-2"></i> CRM Pipeline Stage Breakdown
+            <h3 class="text-sm font-extrabold text-slate-900 mb-4 flex items-center">
+              <i class="fa-solid fa-chart-pie text-blue-600 mr-2"></i> Pipeline Stage Breakdown
             </h3>
-            <div class="h-64 flex justify-center">
+            <div class="h-64 relative">
               <canvas id="chart-stage-breakdown"></canvas>
             </div>
           </div>
           <div class="glass-card p-4 sm:p-5">
-            <h3 class="text-sm font-bold text-slate-800 mb-4 flex items-center">
+            <h3 class="text-sm font-extrabold text-slate-900 mb-4 flex items-center">
               <i class="fa-solid fa-layer-group text-blue-600 mr-2"></i> Demand Volume by Concrete Grade (m³)
             </h3>
-            <div class="h-64 flex justify-center">
+            <div class="h-64 relative">
               <canvas id="chart-grade-volume"></canvas>
             </div>
           </div>
         </div>
 
-        <!-- SALESPERSON LEADERBOARD -->
+        <!-- Leaderboard Table -->
         <div class="glass-card p-4 sm:p-5">
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="text-sm font-bold text-slate-800 flex items-center">
-              <i class="fa-solid fa-trophy text-amber-500 mr-2"></i> Sales Officer Leaderboard (<span id="leaderboard-period-label">All Time</span>)
-            </h3>
-            <button onclick="window.excelExporter.exportFullSystemReport()" class="btn-excel btn-excel-sm cursor-pointer">
-              <i class="fa-solid fa-file-excel"></i> Export All
-            </button>
-          </div>
+          <h3 class="text-sm font-extrabold text-slate-900 mb-4 flex items-center justify-between">
+            <span><i class="fa-solid fa-trophy text-amber-500 mr-2"></i> Sales Officers Performance Leaderboard</span>
+            <span class="text-xs text-slate-500 font-normal">Real-Time Revenue Contribution</span>
+          </h3>
           <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
-              <thead>
-                <tr class="border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider bg-slate-50">
-                  <th class="py-2.5 px-3">Rank</th>
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 font-bold text-slate-700 border-b border-slate-200">
+                <tr>
                   <th class="py-2.5 px-3">Sales Officer</th>
-                  <th class="py-2.5 px-3">Leads</th>
-                  <th class="py-2.5 px-3">Won</th>
-                  <th class="py-2.5 px-3">Volume</th>
-                  <th class="py-2.5 px-3 text-right">Revenue (LKR)</th>
+                  <th class="py-2.5 px-3">Visits</th>
+                  <th class="py-2.5 px-3">Active Deals</th>
+                  <th class="py-2.5 px-3">Deals Won</th>
+                  <th class="py-2.5 px-3 text-right">Volume (m³)</th>
+                  <th class="py-2.5 px-3 text-right">Total Revenue (LKR)</th>
                 </tr>
               </thead>
-              <tbody id="table-leaderboard-body"></tbody>
+              <tbody id="leaderboard-body" class="divide-y divide-slate-100">
+                <!-- Dynamically populated -->
+              </tbody>
             </table>
           </div>
         </div>
-      </section>
+      </div>
 
-      <!-- VIEW 2: SALES VISITS -->
-      <section id="view-visits" class="view-panel hidden space-y-6">
+      <!-- VIEW 2: SALES VISITS ENTRY VIEW -->
+      <div id="view-visits" class="view-content hidden space-y-6">
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <!-- Add Visit Form -->
+          <!-- Add Sales Visit Form -->
           <div class="glass-card p-4 sm:p-5 lg:col-span-1">
-            <h3 class="text-sm font-bold text-slate-900 mb-4 flex items-center">
-              <i class="fa-solid fa-plus-circle text-red-600 mr-2"></i> STEP 1: Add Site Visit
-            </h3>
-            <form id="form-add-visit" class="space-y-3 text-xs">
+            <h2 class="text-sm font-extrabold text-slate-900 mb-4 flex items-center">
+              <i class="fa-solid fa-plus-circle text-red-600 mr-2"></i> Log New Sales Visit
+            </h2>
+            <form id="form-add-visit" class="space-y-3.5 text-xs">
               <div>
                 <label class="block text-slate-700 font-semibold mb-1">Visit Date *</label>
                 <input type="date" id="visit-date" required class="w-full bg-white border border-slate-300 rounded p-2 text-slate-800 focus:border-red-600" />
@@ -251,13 +233,12 @@
               <div>
                 <label class="block text-slate-700 font-semibold mb-1">Contact Phone (10 Digits) *</label>
                 <input type="text" id="visit-contact" maxlength="10" placeholder="0771234567" required pattern="\d{10}" class="w-full bg-white border border-slate-300 rounded p-2 text-slate-800 font-mono focus:border-red-600" />
-                <span class="text-[10px] text-slate-500 block mt-0.5">Must be 10 numeric digits (e.g., 0771234567)</span>
               </div>
               
               <!-- Concrete Grade Selection (Picked by Sales Officer) -->
               <div>
                 <label class="block text-slate-700 font-semibold mb-1">Concrete Grade Picked *</label>
-                <select id="visit-grade" required class="w-full bg-white border border-slate-300 rounded p-2 text-slate-800 font-semibold focus:border-red-600">
+                <select id="visit-grade" required class="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-800 font-semibold focus:border-red-600">
                   <!-- Dynamically populated -->
                 </select>
                 <div id="visit-grade-info-badge" class="mt-1.5 p-2 bg-emerald-50 border border-emerald-200 rounded-lg text-xs flex flex-wrap items-center justify-between text-emerald-800 font-medium">
@@ -266,10 +247,10 @@
                 </div>
               </div>
 
-              <div class="grid grid-cols-3 gap-2">
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label class="block text-slate-700 font-semibold mb-1">Customer Type</label>
-                  <select id="visit-type" class="w-full bg-white border border-slate-300 rounded p-2 text-slate-800">
+                  <select id="visit-type" class="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-slate-800 font-medium focus:border-red-600">
                     <option value="Commercial">Commercial</option>
                     <option value="Infrastructure">Infrastructure</option>
                     <option value="Residential">Residential</option>
@@ -277,33 +258,27 @@
                 </div>
                 <div>
                   <label class="block text-slate-700 font-semibold mb-1">Site Distance (KM) *</label>
-                  <input type="number" id="visit-distance" value="10" min="0" placeholder="e.g. 15" required class="w-full bg-white border border-slate-300 rounded p-2 text-slate-800 focus:border-red-600" />
+                  <input type="number" id="visit-distance" value="10" min="0" placeholder="e.g. 15" required class="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-slate-800 font-mono focus:border-red-600" />
                 </div>
                 <div>
                   <label class="block text-slate-700 font-semibold mb-1">Est. Volume (m³) *</label>
-                  <input type="number" id="visit-volume" min="1" placeholder="e.g. 200" required class="w-full bg-white border border-slate-300 rounded p-2 text-slate-800" />
+                  <input type="number" id="visit-volume" min="1" placeholder="e.g. 200" required class="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-slate-800 font-mono focus:border-red-600" />
                 </div>
               </div>
+
               <div>
                 <label class="block text-slate-700 font-semibold mb-1">Site Visit Notes</label>
-                <textarea id="visit-notes" rows="2" placeholder="Foundation details, access road..." class="w-full bg-white border border-slate-300 rounded p-2 text-slate-800"></textarea>
+                <textarea id="visit-notes" rows="2" placeholder="Foundation details, access road, pump required..." class="w-full bg-white border border-slate-300 rounded p-2 text-slate-800 focus:border-red-600"></textarea>
               </div>
-              <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded text-xs transition shadow-md shadow-red-600/20 cursor-pointer">
-                Submit Visit & Auto-Create Lead
+
+              <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-extrabold py-2.5 rounded text-xs transition cursor-pointer shadow-md flex items-center justify-center">
+                <i class="fa-solid fa-check-circle mr-1.5"></i> Save Visit & Auto-Create CRM Lead
               </button>
             </form>
           </div>
 
-          <!-- Visits Table -->
+          <!-- Sales Visits History Table -->
           <div class="glass-card p-4 sm:p-5 lg:col-span-2">
-            <div class="flex justify-between items-center mb-4">
-              <div>
-                <h3 class="text-sm font-bold text-slate-900">Recorded Sales Visits</h3>
-                <p class="text-[11px] text-slate-500">Managers & Admins can delete wrong entries.</p>
-              </div>
-              <button onclick="window.excelExporter.exportTableToExcel('visits')" class="btn-excel btn-excel-sm cursor-pointer">
-                <i class="fa-solid fa-file-excel"></i> Export
-              </button>
             </div>
             <div class="overflow-x-auto max-h-[calc(100vh-250px)] min-h-[420px] overflow-y-auto custom-scrollbar border border-slate-200 rounded-lg">
               <table class="w-full text-left border-collapse">
@@ -1229,7 +1204,7 @@
   <div id="toast-container"></div>
 
   <!-- MOBILE BOTTOM NAVIGATION BAR (IPHONE 15 & REDMI C13 OPTIMIZED) -->
-  <div class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 py-1.5 px-2 flex justify-around items-center shadow-lg text-[10px] font-semibold text-slate-600">
+  <div class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 safe-bottom-nav px-2 flex justify-around items-center shadow-lg text-[10px] font-semibold text-slate-600">
     <a href="#" data-view="dashboard" class="mobile-nav-link flex flex-col items-center p-1 rounded text-red-600 font-bold">
       <i class="fa-solid fa-chart-pie text-base mb-0.5"></i>
       <span>Dashboard</span>
@@ -1295,7 +1270,20 @@
         </nav>
       </div>
 
-      <div class="pt-4 border-t border-slate-200 space-y-2">
+      <div class="pt-3 border-t border-slate-200 space-y-2">
+        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Mobile Utilities</span>
+        <button onclick="window.excelExporter.exportFullSystemReport()" class="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold py-2 px-3 rounded-lg text-xs transition flex items-center justify-between">
+          <span><i class="fa-solid fa-file-excel text-emerald-600 mr-2"></i> Export Excel Report</span>
+          <i class="fa-solid fa-chevron-right text-[10px]"></i>
+        </button>
+        <button onclick="window.db.exportDatabaseJSON()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2 px-3 rounded-lg text-xs transition flex items-center justify-between">
+          <span><i class="fa-solid fa-database text-amber-400 mr-2"></i> Download Master DB</span>
+          <i class="fa-solid fa-chevron-right text-[10px]"></i>
+        </button>
+        <button onclick="document.getElementById('input-import-db').click()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 px-3 rounded-lg text-xs transition flex items-center justify-between mb-2">
+          <span><i class="fa-solid fa-file-import text-slate-500 mr-2"></i> Restore Database</span>
+          <i class="fa-solid fa-chevron-right text-[10px]"></i>
+        </button>
         <button onclick="logoutUser()" class="w-full bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 font-bold py-2 rounded-lg text-xs transition flex items-center justify-center space-x-2">
           <i class="fa-solid fa-right-from-bracket"></i>
           <span>Sign Out Session</span>
