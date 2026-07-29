@@ -818,6 +818,51 @@ function renderCurrentView() {
       renderAutoQAScreen();
       break;
   }
+  // ALWAYS enforce role access after every render to prevent Firebase re-renders from exposing restricted content
+  enforceRoleAccess();
+}
+
+/**
+ * ROLE ACCESS CONTROL - Single Source of Truth for UI Visibility
+ * Called after EVERY render. Ensures Sales Engineers NEVER see restricted modules.
+ */
+function enforceRoleAccess() {
+  if (!currentUser) return;
+  const roleStr = String(currentUser.role || currentRole || '').toLowerCase();
+  const isAdminOrManager = roleStr.includes('admin') || roleStr.includes('manager');
+
+  // --- Sidebar Nav Links ---
+  const navIds = ['nav-users', 'nav-master-db', 'nav-auto-qa'];
+  navIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('hidden', !isAdminOrManager);
+  });
+
+  // --- Mobile Drawer Nav Links ---
+  const mNavIds = ['mobile-nav-users', 'mobile-nav-master-db', 'mobile-nav-auto-qa'];
+  mNavIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('hidden', !isAdminOrManager);
+  });
+
+  // --- Header Admin Buttons ---
+  ['btn-download-master-db', 'btn-trigger-import-db'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('hidden', !isAdminOrManager);
+  });
+
+  // --- Pricing & Rules: Manager configuration card ---
+  const mgrCard = document.getElementById('manager-grade-card');
+  if (mgrCard) mgrCard.classList.toggle('hidden', !isAdminOrManager);
+
+  // --- Block direct URL hash access to restricted views ---
+  if (!isAdminOrManager && ['users', 'master-db', 'auto-qa'].includes(activeView)) {
+    // Silently redirect to pipeline without toast spam
+    const restrictedPanel = document.getElementById(`view-${activeView}`);
+    if (restrictedPanel) restrictedPanel.classList.add('hidden');
+    const pipelinePanel = document.getElementById('view-pipeline');
+    if (pipelinePanel) pipelinePanel.classList.remove('hidden');
+  }
 }
 
 /**
@@ -3002,34 +3047,10 @@ function applyUserSessionUI() {
     }`;
   }
 
-  const elNavMasterDB = document.getElementById('nav-master-db');
-  const elNavAutoQA = document.getElementById('nav-auto-qa');
-  const mNavUsers = document.getElementById('mobile-nav-users');
-  const mNavMasterDB = document.getElementById('mobile-nav-master-db');
-  const mNavAutoQA = document.getElementById('mobile-nav-auto-qa');
-  const btnDbDownload = document.getElementById('btn-download-master-db');
-  const btnTriggerImport = document.getElementById('btn-trigger-import-db');
-
-  const roleStr = String(currentUser.role || '').toLowerCase();
-  const isAdminOrManager = roleStr.includes('admin') || roleStr.includes('manager');
-
-  if (elNavUsers) elNavUsers.classList.toggle('hidden', !isAdminOrManager);
-  if (elNavMasterDB) elNavMasterDB.classList.toggle('hidden', !isAdminOrManager);
-  if (elNavAutoQA) elNavAutoQA.classList.toggle('hidden', !isAdminOrManager);
-
-  if (mNavUsers) mNavUsers.classList.toggle('hidden', !isAdminOrManager);
-  if (mNavMasterDB) mNavMasterDB.classList.toggle('hidden', !isAdminOrManager);
-  if (mNavAutoQA) mNavAutoQA.classList.toggle('hidden', !isAdminOrManager);
-
-  if (btnDbDownload) btnDbDownload.classList.toggle('hidden', !isAdminOrManager);
-  if (btnTriggerImport) btnTriggerImport.classList.toggle('hidden', !isAdminOrManager);
-
-  const managerGradeCard = document.getElementById('manager-grade-card');
-  if (managerGradeCard) {
-    managerGradeCard.classList.toggle('hidden', !isAdminOrManager);
-  }
-
+  // Delegate all element visibility to enforceRoleAccess() which is called inside renderCurrentView()
   renderCurrentView();
+  // Call again explicitly here to cover any nav elements not in the view panel
+  enforceRoleAccess();
 }
 
 window.handleUserLogin = function(e) {
