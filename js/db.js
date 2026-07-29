@@ -332,8 +332,8 @@ class Database {
     this.isFirebaseConnected = false;
     this.fbRef = null;
 
+    // Rule 1: In-memory application state initialization (No localStorage DB mirroring)
     this.data = this.sanitizeData(this.load());
-    this.save();
 
     setTimeout(() => this.initFirebase(), 100);
   }
@@ -398,21 +398,12 @@ class Database {
       this.isFirebaseConnected = true;
       this.updateFirebaseBadge('connected');
 
+      // Rule 2: Firebase Listener updates In-Memory State directly from Cloud SSOT
       this.fbRef.on('value', (snapshot) => {
         const val = snapshot.val();
         if (val && typeof val === 'object') {
           this.data = this.sanitizeData(val);
-          localStorage.setItem(DB_KEY, JSON.stringify(this.data));
-          
-          if (window.rulesEngine && typeof window.rulesEngine.evaluateSystemRules === 'function') {
-            window.rulesEngine.evaluateSystemRules();
-          }
-          if (typeof window.updateHeaderKPIs === 'function') {
-            window.updateHeaderKPIs();
-          }
-          if (typeof window.renderCurrentView === 'function') {
-            window.renderCurrentView();
-          }
+          this.notifyUI();
         }
       }, (error) => {
         console.warn('Firebase sync listener error:', error);
@@ -422,6 +413,18 @@ class Database {
     } catch (e) {
       console.warn('Firebase init caught exception:', e);
       this.updateFirebaseBadge('offline');
+    }
+  }
+
+  notifyUI() {
+    if (window.rulesEngine && typeof window.rulesEngine.evaluateSystemRules === 'function') {
+      window.rulesEngine.evaluateSystemRules();
+    }
+    if (typeof window.updateHeaderKPIs === 'function') {
+      window.updateHeaderKPIs();
+    }
+    if (typeof window.renderCurrentView === 'function') {
+      window.renderCurrentView();
     }
   }
 
@@ -474,27 +477,29 @@ class Database {
   }
 
   load() {
-    try {
-      const stored = localStorage.getItem(DB_KEY);
-      if (stored) {
-        return JSON.parse(stored);
-      }
-    } catch (e) {
-      console.warn('LocalStorage load failed, using seed data:', e);
-    }
+    // Pure in-memory state initialization from cloud/seed
     return JSON.parse(JSON.stringify(initialSeedData));
   }
 
+  // Rule 3: Granular Mutations (Push only changed fields/nodes to Firebase)
+  saveNode(nodeKey) {
+    if (!nodeKey) return;
+    if (this.isFirebaseConnected && this.fbRef) {
+      this.fbRef.child(nodeKey).set(this.data[nodeKey]).catch(err => {
+        console.warn(`Granular Firebase write failed for ${nodeKey}:`, err);
+      });
+    } else {
+      this.notifyUI();
+    }
+  }
+
   save() {
-    try {
-      localStorage.setItem(DB_KEY, JSON.stringify(this.data));
-      if (this.isFirebaseConnected && this.fbRef) {
-        this.fbRef.set(this.data).catch(err => {
-          console.warn('Firebase cloud write failed:', err);
-        });
-      }
-    } catch (e) {
-      console.error('LocalStorage save failed:', e);
+    if (this.isFirebaseConnected && this.fbRef) {
+      this.fbRef.set(this.data).catch(err => {
+        console.warn('Firebase sync failed:', err);
+      });
+    } else {
+      this.notifyUI();
     }
   }
 
@@ -546,7 +551,7 @@ class Database {
     if (config.pump_extra_rate_per_m3_lkr !== undefined) this.data.pricingConfig.pump_extra_rate_per_m3_lkr = Math.max(0, Number(config.pump_extra_rate_per_m3_lkr));
     if (config.validity_period_days !== undefined) this.data.pricingConfig.validity_period_days = Math.max(1, Number(config.validity_period_days));
 
-    this.save();
+    this.saveNode('pricingConfig');
     return this.data.pricingConfig;
   }
 
@@ -573,7 +578,7 @@ class Database {
         base_price_lkr: cleanPrice
       });
     }
-    this.save();
+    this.saveNode('concreteGrades');
     return cleanName;
   }
   deleteGrade(id) {
@@ -581,7 +586,7 @@ class Database {
     const index = this.data.concreteGrades.findIndex(g => g.id === numericId);
     if (index >= 0) {
       const deleted = this.data.concreteGrades.splice(index, 1)[0];
-      this.save();
+      this.saveNode('concreteGrades');
       return deleted;
     }
     return null;
@@ -593,7 +598,7 @@ class Database {
   addVisit(visit) {
     visit.id = Date.now();
     this.data.salesVisits.push(visit);
-    this.save();
+    this.saveNode('salesVisits');
     return visit;
   }
   updateVisit(id, patch) {
@@ -609,8 +614,9 @@ class Database {
         if (patch.distance_km !== undefined) opp.distance_km = patch.distance_km;
         if (patch.contact) opp.contact = patch.contact;
         opp.updated_at = new Date().toISOString();
+        this.saveNode('opportunities');
       }
-      this.save();
+      this.saveNode('salesVisits');
     }
     return visit;
   }
@@ -620,7 +626,7 @@ class Database {
     if (index >= 0) {
       const deleted = this.data.salesVisits.splice(index, 1)[0];
       this.deleteOpportunityByVisit(numericId);
-      this.save();
+      this.saveNode('salesVisits');
       return deleted;
     }
     return null;
@@ -633,7 +639,7 @@ class Database {
     if (!opp.id) opp.id = Math.floor(1000 + Math.random() * 9000);
     opp.updated_at = new Date().toISOString();
     this.data.opportunities.push(opp);
-    this.save();
+    this.saveNode('opportunities');
     return opp;
   }
   updateOpportunity(id, patch) {
@@ -641,7 +647,7 @@ class Database {
     if (opp) {
       Object.assign(opp, patch);
       opp.updated_at = new Date().toISOString();
-      this.save();
+      this.saveNode('opportunities');
     }
     return opp;
   }
@@ -652,7 +658,9 @@ class Database {
       const deleted = this.data.opportunities.splice(index, 1)[0];
       this.data.quotations = this.data.quotations.filter(q => q.opportunity_id !== numericId);
       this.data.orders = this.data.orders.filter(ord => ord.opportunity_id !== numericId);
-      this.save();
+      this.saveNode('opportunities');
+      this.saveNode('quotations');
+      this.saveNode('orders');
       return deleted;
     }
     return null;
@@ -711,7 +719,7 @@ class Database {
       quote.id = Math.floor(2000 + Math.random() * 9000);
       this.data.quotations.push(quote);
     }
-    this.save();
+    this.saveNode('quotations');
     return quote;
   }
 
@@ -722,14 +730,14 @@ class Database {
   addOrder(order) {
     if (!order.id) order.id = Math.floor(3000 + Math.random() * 9000);
     this.data.orders.push(order);
-    this.save();
+    this.saveNode('orders');
     return order;
   }
   updateOrder(id, patch) {
     const order = this.getOrder(id);
     if (order) {
       Object.assign(order, patch);
-      this.save();
+      this.saveNode('orders');
     }
     return order;
   }
@@ -740,8 +748,9 @@ class Database {
       const deleted = this.data.orders.splice(index, 1)[0];
       if (this.data.deliveryLogs) {
         this.data.deliveryLogs = this.data.deliveryLogs.filter(l => l.order_id !== numericId);
+        this.saveNode('deliveryLogs');
       }
-      this.save();
+      this.saveNode('orders');
       return deleted;
     }
     return null;
@@ -773,26 +782,8 @@ class Database {
     } else if (order.status === 'Completed' && totalDelivered < order.confirmed_volume_m3) {
       order.status = 'Active';
     }
-    this.save();
+    this.saveNode('orders');
     return totalDelivered;
-  }
-
-  getUniqueCustomers() {
-    const customerMap = new Map();
-
-    (this.data.salesVisits || []).forEach(v => {
-      if (v.contact && !customerMap.has(v.contact)) {
-        customerMap.set(v.contact, { contact: v.contact, name: v.customer_name || 'Client' });
-      }
-    });
-
-    (this.data.opportunities || []).forEach(o => {
-      if (o.contact && !customerMap.has(o.contact)) {
-        customerMap.set(o.contact, { contact: o.contact, name: o.customer_name || 'Client' });
-      }
-    });
-
-    return Array.from(customerMap.values());
   }
 
   addDeliveryLog(logEntry) {
@@ -800,6 +791,7 @@ class Database {
     if (!logEntry.id) logEntry.id = Date.now();
     logEntry.created_at = new Date().toISOString();
     this.data.deliveryLogs.push(logEntry);
+    this.saveNode('deliveryLogs');
     this.recalculateOrderDeliveredVolume(logEntry.order_id);
     return logEntry;
   }
@@ -808,6 +800,7 @@ class Database {
     const log = this.getDeliveryLog(id);
     if (log) {
       Object.assign(log, patch);
+      this.saveNode('deliveryLogs');
       this.recalculateOrderDeliveredVolume(log.order_id);
     }
     return log;
@@ -819,6 +812,7 @@ class Database {
     const index = this.data.deliveryLogs.findIndex(l => l.id === numericId);
     if (index >= 0) {
       const deleted = this.data.deliveryLogs.splice(index, 1)[0];
+      this.saveNode('deliveryLogs');
       this.recalculateOrderDeliveredVolume(deleted.order_id);
       return deleted;
     }
@@ -893,7 +887,7 @@ class Database {
         user = JSON.parse(JSON.stringify(seedUser));
         const users = this.getUsers();
         users.push(user);
-        this.save();
+        this.saveNode('users');
       }
     }
 
@@ -943,7 +937,7 @@ class Database {
     if (!userData.status) userData.status = 'Active';
     userData.created_at = new Date().toISOString();
     users.push(userData);
-    this.save();
+    this.saveNode('users');
     return userData;
   }
 
@@ -951,7 +945,7 @@ class Database {
     const user = this.getUser(id);
     if (user) {
       Object.assign(user, patch);
-      this.save();
+      this.saveNode('users');
     }
     return user;
   }
@@ -962,7 +956,7 @@ class Database {
     const idx = users.findIndex(u => u.id === numericId);
     if (idx >= 0) {
       const deleted = users.splice(idx, 1)[0];
-      this.save();
+      this.saveNode('users');
       return deleted;
     }
     return null;
@@ -972,7 +966,7 @@ class Database {
   getCustomerPricingRules() {
     if (!this.data.customerPricingRules) {
       this.data.customerPricingRules = JSON.parse(JSON.stringify(initialSeedData.customerPricingRules || []));
-      this.save();
+      this.saveNode('customerPricingRules');
     }
     return this.data.customerPricingRules;
   }
@@ -1006,7 +1000,7 @@ class Database {
       if (!rule.status) rule.status = 'Active';
       rules.push(rule);
     }
-    this.save();
+    this.saveNode('customerPricingRules');
     return rule;
   }
 
@@ -1015,7 +1009,7 @@ class Database {
     const idx = rules.findIndex(r => Number(r.id) === Number(id));
     if (idx >= 0) {
       const deleted = rules.splice(idx, 1)[0];
-      this.save();
+      this.saveNode('customerPricingRules');
       return deleted;
     }
     return null;
@@ -1042,14 +1036,14 @@ class Database {
       const cleanFields = { ...updatedFields };
       delete cleanFields.id;
       Object.assign(this.data.pricingConfig, cleanFields);
-      this.save();
+      this.saveNode('pricingConfig');
       return this.data.pricingConfig;
     }
     const list = this.getTableData(tableName);
     const item = list.find(r => Number(r.id) === Number(id));
     if (item) {
       Object.assign(item, updatedFields);
-      this.save();
+      this.saveNode(tableName);
     }
     return item;
   }
@@ -1082,6 +1076,7 @@ class Database {
           Number(o.visit_id) !== numericId && 
           (!deletedContact || o.contact !== deletedContact)
         );
+        this.saveNode('opportunities');
       } else if (tableName === 'opportunities') {
         const linkedOrders = (this.data.orders || []).filter(ord => Number(ord.opportunity_id) === numericId);
         linkedOrders.forEach(ord => {
@@ -1090,11 +1085,14 @@ class Database {
 
         this.data.quotations = (this.data.quotations || []).filter(q => Number(q.opportunity_id) !== numericId);
         this.data.orders = (this.data.orders || []).filter(ord => Number(ord.opportunity_id) !== numericId);
+        this.saveNode('quotations');
+        this.saveNode('orders');
       } else if (tableName === 'orders') {
         this.data.deliveryLogs = (this.data.deliveryLogs || []).filter(log => Number(log.order_id) !== numericId);
+        this.saveNode('deliveryLogs');
       }
 
-      this.save();
+      this.saveNode(tableName);
       return deleted;
     }
     return null;
@@ -1109,19 +1107,29 @@ class Database {
       this.data.quotations = [];
       this.data.orders = [];
       this.data.deliveryLogs = [];
+      this.saveNode('salesVisits');
+      this.saveNode('opportunities');
+      this.saveNode('quotations');
+      this.saveNode('orders');
+      this.saveNode('deliveryLogs');
     } else if (tableName === 'opportunities') {
       this.data.opportunities = [];
       this.data.quotations = [];
       this.data.orders = [];
       this.data.deliveryLogs = [];
+      this.saveNode('opportunities');
+      this.saveNode('quotations');
+      this.saveNode('orders');
+      this.saveNode('deliveryLogs');
     } else if (tableName === 'orders') {
       this.data.orders = [];
       this.data.deliveryLogs = [];
+      this.saveNode('orders');
+      this.saveNode('deliveryLogs');
     } else {
       this.data[tableName] = [];
+      this.saveNode(tableName);
     }
-
-    this.save();
   }
 
   addMasterRecord(tableName, recordData) {
@@ -1130,7 +1138,7 @@ class Database {
       recordData.id = Date.now();
     }
     list.push(recordData);
-    this.save();
+    this.saveNode(tableName);
     return recordData;
   }
 
@@ -1145,7 +1153,7 @@ class Database {
       details
     };
     this.data.activityLog.push(entry);
-    this.save();
+    this.saveNode('activityLog');
     return entry;
   }
 }
