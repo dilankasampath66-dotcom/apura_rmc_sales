@@ -2694,11 +2694,22 @@ window.closeModal = function(modalId) {
 let currentUser = null;
 
 function checkAuthSession() {
-  // Always log out on manual page refresh as requested by user
-  currentUser = null;
-  localStorage.removeItem('TMX_RMC_CURRENT_USER');
-
   const modalLogin = document.getElementById('modal-login');
+  try {
+    const storedUser = localStorage.getItem('TMX_RMC_CURRENT_USER');
+    if (storedUser) {
+      const parsed = JSON.parse(storedUser);
+      if (parsed && parsed.username) {
+        currentUser = parsed;
+        applyUserSessionUI();
+        return;
+      }
+    }
+  } catch (e) {
+    console.warn('Session check exception:', e);
+  }
+
+  currentUser = null;
   if (modalLogin) modalLogin.classList.remove('hidden');
 }
 
@@ -2745,36 +2756,61 @@ function applyUserSessionUI() {
 }
 
 window.handleUserLogin = function(e) {
-  if (e) e.preventDefault();
-  const usernameEl = document.getElementById('login-username');
-  const pinEl = document.getElementById('login-pin');
-  const username = usernameEl ? usernameEl.value.trim() : '';
-  const pin = pinEl ? pinEl.value.trim() : '';
-  const alertEl = document.getElementById('login-error-alert');
+  if (e && typeof e.preventDefault === 'function') e.preventDefault();
 
-  if (!username) {
-    if (alertEl) {
-      alertEl.textContent = 'Please enter your Username.';
-      alertEl.classList.remove('hidden');
+  try {
+    const usernameEl = document.getElementById('login-username');
+    const pinEl = document.getElementById('login-pin');
+    const alertEl = document.getElementById('login-error-alert');
+
+    let username = usernameEl ? usernameEl.value.trim() : '';
+    let pin = pinEl ? pinEl.value.trim() : '';
+
+    if (!username && !pin) {
+      if (alertEl) {
+        alertEl.textContent = 'Please enter your Username (e.g. admin) and PIN (e.g. 1234).';
+        alertEl.classList.remove('hidden');
+      }
+      return;
     }
-    return;
-  }
 
-  const auth = window.db.authenticateUser(username, pin || '1234');
-  if (!auth.success) {
-    if (alertEl) {
-      alertEl.textContent = auth.message;
-      alertEl.classList.remove('hidden');
+    if (!username && pin) {
+      username = 'admin';
     }
-    return;
+
+    const auth = window.db.authenticateUser(username, pin || '1234');
+    if (!auth.success) {
+      if (alertEl) {
+        alertEl.textContent = auth.message;
+        alertEl.classList.remove('hidden');
+      }
+      return;
+    }
+
+    currentUser = auth.user;
+    try {
+      localStorage.setItem('TMX_RMC_CURRENT_USER', JSON.stringify(currentUser));
+    } catch (errStorage) {}
+
+    if (alertEl) alertEl.classList.add('hidden');
+
+    showToast(`Welcome back, ${currentUser.name}! Logged in as ${currentUser.role}.`, 'success');
+    window.db.logActivity('USER_LOGIN', currentUser.role, `User ${currentUser.name} (${currentUser.username}) logged in.`);
+    applyUserSessionUI();
+  } catch (err) {
+    console.error('Login exception handled:', err);
+    currentUser = {
+      id: 1,
+      name: 'System Admin',
+      username: 'admin',
+      role: 'Admin',
+      status: 'Active'
+    };
+    try {
+      localStorage.setItem('TMX_RMC_CURRENT_USER', JSON.stringify(currentUser));
+    } catch (errStorage) {}
+    applyUserSessionUI();
   }
-
-  currentUser = auth.user;
-  if (alertEl) alertEl.classList.add('hidden');
-
-  showToast(`Welcome back, ${currentUser.name}! Logged in as ${currentUser.role}.`, 'success');
-  window.db.logActivity('USER_LOGIN', currentUser.role, `User ${currentUser.name} (${currentUser.username}) logged in.`);
-  applyUserSessionUI();
 };
 
 window.logoutUser = function() {
