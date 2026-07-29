@@ -62,7 +62,7 @@ const FIREBASE_CFG_KEY = 'TMX_RMC_FIREBASE_CFG_V1';
 const DEFAULT_FIREBASE_CONFIG = {
   apiKey: "AIzaSyDk-DO7OGwOk1LXMDS0PRskxzqx3wcIZu8",
   authDomain: "apura-rmc-sales.firebaseapp.com",
-  databaseURL: "https://apura-rmc-sales-default-rtdb.firebaseio.com",
+  databaseURL: "https://apura-rmc-sales-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "apura-rmc-sales",
   storageBucket: "apura-rmc-sales.firebasestorage.app",
   messagingSenderId: "23882762737",
