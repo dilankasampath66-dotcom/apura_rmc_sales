@@ -142,6 +142,38 @@ class Database {
     }
     if (!data.opportunities) data.opportunities = [];
 
+    // --- Self-Healing Sync: Ensure every salesVisit has a corresponding Opportunity in CRM Pipeline ---
+    if (Array.isArray(data.salesVisits) && data.salesVisits.length > 0) {
+      data.salesVisits.forEach(v => {
+        if (!v || !v.customer_name) return;
+        const vId = Number(v.id);
+        const exists = data.opportunities.some(o => 
+          o && (Number(o.visit_id) === vId || (v.contact && String(o.contact).trim() === String(v.contact).trim()) || (o.customer_name && o.customer_name.trim().toLowerCase() === v.customer_name.trim().toLowerCase()))
+        );
+        if (!exists) {
+          const vol = Number(v.project_size_m3) || 30;
+          const grade = v.concrete_grade || 'M20';
+          const basePrice = (grade === 'M30' ? 28500 : (grade === 'M25' ? 26000 : 24000));
+          const estValue = vol * basePrice;
+          data.opportunities.push({
+            id: vId + 1000,
+            visit_id: vId,
+            customer_name: v.customer_name,
+            contact: v.contact || '',
+            distance_km: Number(v.distance_km) || 10,
+            sales_officer: v.sales_officer || 'Sunil Perera',
+            concrete_grade: grade,
+            stage: 'Lead',
+            expected_volume_m3: vol,
+            expected_value_lkr: estValue,
+            probability: 30,
+            updated_at: new Date().toISOString(),
+            lost_reason: ''
+          });
+        }
+      });
+    }
+
     // --- Normalize deliveryLogs ---
     if (data.deliveryLogs && !Array.isArray(data.deliveryLogs)) {
       data.deliveryLogs = Object.values(data.deliveryLogs).filter(Boolean);

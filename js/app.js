@@ -1099,7 +1099,8 @@ function bindPipelineFilters() {
 function renderPipelineKanban() {
   let opps = window.db.getOpportunities();
   const stages = ['Lead', 'Quote', 'Negotiation', 'Won', 'Lost'];
-  const canDelete = true;
+  const roleStr = String(currentRole || (currentUser ? currentUser.role : '')).toLowerCase();
+  const canDelete = roleStr.includes('admin') || roleStr.includes('manager');
 
   const mobileSelect = document.getElementById('pipeline-filter-mobile');
   if (mobileSelect && mobileSelect.options.length <= 1) {
@@ -1405,7 +1406,8 @@ window.openOpportunityModal = function(oppId) {
 
   const quote = window.db.getQuotationByOpp(opp.id);
   const ai = window.aiEngine.analyzeOpportunity(opp, quote);
-  const canDelete = currentRole === 'Manager' || currentRole === 'Admin';
+  const roleStr = String(currentRole || (currentUser ? currentUser.role : '')).toLowerCase();
+  const canDelete = roleStr.includes('admin') || roleStr.includes('manager');
 
   container.innerHTML = `
     <div class="space-y-4">
@@ -1489,6 +1491,13 @@ window.openOpportunityModal = function(oppId) {
 window.deleteOpportunityEntry = function(oppId, event) {
   if (event) event.stopPropagation();
 
+  const roleStr = String(currentRole || (currentUser ? currentUser.role : '')).toLowerCase();
+  const isAdminOrManager = roleStr.includes('admin') || roleStr.includes('manager');
+  if (!isAdminOrManager) {
+    showToast('PERMISSION DENIED: Sales Engineers cannot delete CRM pipeline deals.', 'error');
+    return;
+  }
+
   const opp = window.db.getOpportunity(oppId);
   if (!opp) {
     // If not found in opportunities table, attempt Master DB fallback delete
@@ -1553,7 +1562,8 @@ window.saveOpportunityStageChange = function(oppId) {
 function renderVisits() {
   const visits = window.db.getVisits();
   const tbody = document.getElementById('table-visits-body');
-  const canDelete = currentRole === 'Manager' || currentRole === 'Admin';
+  const roleStr = String(currentRole || (currentUser ? currentUser.role : '')).toLowerCase();
+  const canDelete = roleStr.includes('admin') || roleStr.includes('manager');
 
   if (tbody) {
     if (!visits || visits.length === 0) {
