@@ -51,6 +51,36 @@ const initialSeedData = {
       phone: '0772220000',
       status: 'Active',
       created_at: '2026-07-01T08:00:00.000Z'
+    },
+    {
+      id: 3,
+      name: 'Wasantha',
+      username: 'wasantha',
+      pin: '1234',
+      role: 'Sales Engineer',
+      phone: '0771234567',
+      status: 'Active',
+      created_at: '2026-07-05T08:00:00.000Z'
+    },
+    {
+      id: 4,
+      name: 'Tharusha',
+      username: 'tharusha',
+      pin: '1234',
+      role: 'Sales Engineer',
+      phone: '0719876543',
+      status: 'Active',
+      created_at: '2026-07-05T08:00:00.000Z'
+    },
+    {
+      id: 5,
+      name: 'Nishan',
+      username: 'nishan',
+      pin: '1234',
+      role: 'Sales Engineer',
+      phone: '0765558899',
+      status: 'Active',
+      created_at: '2026-07-05T08:00:00.000Z'
     }
   ],
   customerPricingRules: []

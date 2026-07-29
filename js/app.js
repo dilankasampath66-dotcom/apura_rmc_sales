@@ -716,6 +716,14 @@ function switchView(viewName, updateHash = true) {
   if (!VALID_VIEWS.includes(viewName)) {
     viewName = 'dashboard';
   }
+
+  const roleStr = String(currentRole || (currentUser ? currentUser.role : '')).toLowerCase();
+  const isAdminOrManager = roleStr.includes('admin') || roleStr.includes('manager');
+  if (!isAdminOrManager && ['users', 'master-db', 'auto-qa'].includes(viewName)) {
+    showToast('RESTRICTED MODULE: Accessible only by System Admin and Plant Manager.', 'warning');
+    viewName = 'pipeline';
+  }
+
   activeView = viewName;
 
   // 1. Hide ALL view panels completely to eliminate section shifting and content jumping
@@ -1914,6 +1922,13 @@ function bindFormHandlers() {
  * QUOTATION SCREEN & PRICING ENGINE
  */
 function renderQuotationScreen() {
+  const roleStr = String(currentRole || (currentUser ? currentUser.role : '')).toLowerCase();
+  const isAdminOrManager = roleStr.includes('admin') || roleStr.includes('manager');
+  const mgrCard = document.getElementById('manager-grade-card');
+  if (mgrCard) {
+    mgrCard.classList.toggle('hidden', !isAdminOrManager);
+  }
+
   populateGradeDropdowns();
   renderGradesManagerList();
 
@@ -2988,17 +3003,31 @@ function applyUserSessionUI() {
   }
 
   const elNavMasterDB = document.getElementById('nav-master-db');
+  const elNavAutoQA = document.getElementById('nav-auto-qa');
   const mNavUsers = document.getElementById('mobile-nav-users');
   const mNavMasterDB = document.getElementById('mobile-nav-master-db');
   const mNavAutoQA = document.getElementById('mobile-nav-auto-qa');
+  const btnDbDownload = document.getElementById('btn-download-master-db');
+  const btnTriggerImport = document.getElementById('btn-trigger-import-db');
 
-  const isAdminOrManager = (currentUser.role === 'Admin' || currentUser.role === 'Manager');
+  const roleStr = String(currentUser.role || '').toLowerCase();
+  const isAdminOrManager = roleStr.includes('admin') || roleStr.includes('manager');
 
   if (elNavUsers) elNavUsers.classList.toggle('hidden', !isAdminOrManager);
   if (elNavMasterDB) elNavMasterDB.classList.toggle('hidden', !isAdminOrManager);
+  if (elNavAutoQA) elNavAutoQA.classList.toggle('hidden', !isAdminOrManager);
+
   if (mNavUsers) mNavUsers.classList.toggle('hidden', !isAdminOrManager);
   if (mNavMasterDB) mNavMasterDB.classList.toggle('hidden', !isAdminOrManager);
-  if (mNavAutoQA) mNavAutoQA.classList.toggle('hidden', currentUser.role === 'Sales Officer');
+  if (mNavAutoQA) mNavAutoQA.classList.toggle('hidden', !isAdminOrManager);
+
+  if (btnDbDownload) btnDbDownload.classList.toggle('hidden', !isAdminOrManager);
+  if (btnTriggerImport) btnTriggerImport.classList.toggle('hidden', !isAdminOrManager);
+
+  const managerGradeCard = document.getElementById('manager-grade-card');
+  if (managerGradeCard) {
+    managerGradeCard.classList.toggle('hidden', !isAdminOrManager);
+  }
 
   renderCurrentView();
 }
