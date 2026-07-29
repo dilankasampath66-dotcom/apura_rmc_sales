@@ -153,6 +153,8 @@ function generateThermalQuotationHTML(calc, opp, grade, distance, pump, volume, 
       <div style="font-size: 11px; line-height: 1.4;"><strong>Client  :</strong> ${customerName}</div>
       ${customerPhone ? `<div style="font-size: 11px; line-height: 1.4;"><strong>Tel     :</strong> ${customerPhone}</div>` : ''}
       <div style="font-size: 11px; line-height: 1.4;"><strong>Dist.   :</strong> ${distance} KM (${calc.freeKm}KM Free Limit)</div>
+      ${(visit && visit.location) ? `<div style="font-size: 11px; line-height: 1.4;"><strong>Location:</strong> ${visit.location}</div>` : ''}
+      ${(visit && visit.map_link) ? `<div style="font-size: 10px; line-height: 1.4; word-break: break-all;"><strong>Map Link:</strong> <a href="${visit.map_link}" target="_blank" style="color: #2563eb; text-decoration: underline;">${visit.map_link}</a></div>` : ''}
       <div style="font-size: 11px; line-height: 1.4;"><strong>Grade   :</strong> ${grade} (${volume} m³)</div>
 
       <div style="border-bottom: 1px dashed #000000; margin: 6px 0;"></div>
@@ -347,6 +349,7 @@ ${lineDivider}
 ${customerPhone ? `* Contact Tel   : ${customerPhone}\n` : ''}* Concrete Grade: ${grade}
 * Target Volume : ${volume} m³
 * Site Distance : ${distance} KM (${calc.freeKm}KM Free Included)
+${(visit && visit.location) ? `* Project Location: ${visit.location}\n` : ''}${(visit && visit.map_link) ? `* Google Maps Link : ${visit.map_link}\n` : ''}
 
 💰 PRICING & SUPPLY BREAKDOWN
 1️⃣ Concrete Supply Charge:
@@ -1582,7 +1585,11 @@ function renderVisits() {
         <td class="py-3 px-3.5 text-slate-600 align-middle font-mono whitespace-nowrap text-xs">${v.date}</td>
         <td class="py-3 px-3.5 text-slate-900 align-middle">
           <div class="font-bold text-slate-900">${v.customer_name}</div>
-          <div class="text-[10px] font-mono text-slate-500">📱 ${v.contact || 'N/A'} | 📍 ${v.location || 'N/A'}</div>
+          <div class="text-[10px] font-mono text-slate-500 flex flex-wrap gap-1 items-center">
+            <span>📱 ${v.contact || 'N/A'}</span>
+            <span>| 📍 ${v.location || 'N/A'}</span>
+            ${v.map_link ? `<a href="${v.map_link}" target="_blank" onclick="event.stopPropagation()" class="text-blue-600 font-bold hover:underline ml-1">🗺️ Map Link</a>` : ''}
+          </div>
         </td>
         <td class="py-3 px-3.5 align-middle">
           <span class="bg-blue-50 text-blue-800 border border-blue-200 px-2 py-0.5 rounded-md font-bold text-[10px]">${v.concrete_grade || 'M25'}</span>
@@ -1616,6 +1623,7 @@ window.loadVisitForEditing = function(visitId) {
   const officerEl = document.getElementById('visit-officer');
   const customerEl = document.getElementById('visit-customer');
   const locationEl = document.getElementById('visit-location');
+  const mapLinkEl = document.getElementById('visit-map-link');
   const contactEl = document.getElementById('visit-contact');
   const gradeEl = document.getElementById('visit-grade');
   const typeEl = document.getElementById('visit-type');
@@ -1632,6 +1640,7 @@ window.loadVisitForEditing = function(visitId) {
   if (officerEl) officerEl.value = visit.sales_officer || '';
   if (customerEl) customerEl.value = visit.customer_name || '';
   if (locationEl) locationEl.value = visit.location || '';
+  if (mapLinkEl) mapLinkEl.value = visit.map_link || '';
   if (contactEl) contactEl.value = visit.contact || '';
   if (typeEl) typeEl.value = visit.customer_type || 'Commercial';
   if (gradeEl) gradeEl.value = visit.concrete_grade || 'M20';
@@ -1896,6 +1905,7 @@ function bindFormHandlers() {
         sales_officer: document.getElementById('visit-officer').value,
         customer_name: document.getElementById('visit-customer').value,
         location: document.getElementById('visit-location').value,
+        map_link: document.getElementById('visit-map-link') ? document.getElementById('visit-map-link').value.trim() : '',
         contact: phoneValidation.cleanContact,
         notes: document.getElementById('visit-notes').value,
         customer_type: document.getElementById('visit-type').value,
@@ -3461,7 +3471,10 @@ window.renderMasterDBScreen = function() {
             const val = row[k];
             let displayVal = val === null || val === undefined ? '<span class="text-slate-300">null</span>' : String(val);
             if (typeof val === 'object') displayVal = JSON.stringify(val);
-            return `<td class="py-2.5 px-3.5 whitespace-nowrap font-mono text-[11px] max-w-[220px] truncate" title="${displayVal.replace(/"/g, '&quot;')}">${displayVal}</td>`;
+            if (k === 'map_link' && val && String(val).startsWith('http')) {
+              displayVal = `<a href="${val}" target="_blank" class="text-blue-600 font-bold underline hover:text-blue-800">🗺️ Google Map</a>`;
+            }
+            return `<td class="py-2.5 px-3.5 whitespace-nowrap font-mono text-[11px] max-w-[220px] truncate" title="${String(val || '').replace(/"/g, '&quot;')}">${displayVal}</td>`;
           }).join('')}
           <td class="py-2.5 px-3.5 text-right whitespace-nowrap">
             <div class="flex items-center justify-end space-x-1.5">

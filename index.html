@@ -240,6 +240,13 @@
                 <input type="text" id="visit-location" placeholder="e.g. Plant Site / Region" required class="w-full bg-white border border-slate-300 rounded p-2 text-slate-800 focus:border-red-600" />
               </div>
               <div>
+                <label class="block text-slate-700 font-semibold mb-1 flex items-center justify-between">
+                  <span>Google Map Link <span class="text-slate-400 font-normal">(Optional)</span></span>
+                  <i class="fa-solid fa-map-location-dot text-blue-600"></i>
+                </label>
+                <input type="url" id="visit-map-link" placeholder="e.g. https://maps.google.com/?q=..." class="w-full bg-white border border-slate-300 rounded p-2 text-slate-800 text-xs focus:border-red-600" />
+              </div>
+              <div>
                 <label class="block text-slate-700 font-semibold mb-1">Contact Phone (10 Digits) *</label>
                 <input type="text" id="visit-contact" maxlength="10" placeholder="0771234567" required pattern="\d{10}" class="w-full bg-white border border-slate-300 rounded p-2 text-slate-800 font-mono focus:border-red-600" />
               </div>
