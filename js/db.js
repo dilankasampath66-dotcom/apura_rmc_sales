@@ -343,42 +343,88 @@ class Database {
     if (!data || typeof data !== 'object') {
       data = JSON.parse(JSON.stringify(initialSeedData));
     }
-    
-    // Ensure concreteGrades is a valid Array (Firebase RTDB turns arrays into objects)
-    if (!data.concreteGrades || !Array.isArray(data.concreteGrades)) {
-      if (data.concreteGrades && typeof data.concreteGrades === 'object') {
+
+    // --- Normalize concreteGrades: Firebase RTDB stores arrays as {"0":{},"1":{}} objects ---
+    // ALWAYS normalize — don't skip if it's already an array (may contain null slots)
+    if (data.concreteGrades) {
+      if (!Array.isArray(data.concreteGrades)) {
         data.concreteGrades = Object.values(data.concreteGrades);
-      } else {
-        data.concreteGrades = JSON.parse(JSON.stringify(initialSeedData.concreteGrades));
       }
+      // Remove null/undefined/invalid slots that Firebase can introduce
+      data.concreteGrades = data.concreteGrades.filter(
+        g => g && typeof g === 'object' && g.grade_name && String(g.grade_name).trim()
+      );
+    } else {
+      data.concreteGrades = JSON.parse(JSON.stringify(initialSeedData.concreteGrades));
     }
 
-    if (!data.pricingConfig || data.pricingConfig.pump_car_transport_rate_per_km_lkr === 150) {
+    // --- Normalize salesVisits ---
+    if (data.salesVisits && !Array.isArray(data.salesVisits)) {
+      data.salesVisits = Object.values(data.salesVisits).filter(Boolean);
+    }
+    if (!data.salesVisits) data.salesVisits = [];
+
+    // --- Normalize opportunities ---
+    if (data.opportunities && !Array.isArray(data.opportunities)) {
+      data.opportunities = Object.values(data.opportunities).filter(Boolean);
+    }
+    if (!data.opportunities) data.opportunities = [];
+
+    // --- Normalize deliveryLogs ---
+    if (data.deliveryLogs && !Array.isArray(data.deliveryLogs)) {
+      data.deliveryLogs = Object.values(data.deliveryLogs).filter(Boolean);
+    }
+    if (!data.deliveryLogs) data.deliveryLogs = [];
+
+    // --- Normalize orders ---
+    if (data.orders && !Array.isArray(data.orders)) {
+      data.orders = Object.values(data.orders).filter(Boolean);
+    }
+    if (!data.orders) data.orders = [];
+
+    // --- Normalize activityLog ---
+    if (data.activityLog && !Array.isArray(data.activityLog)) {
+      data.activityLog = Object.values(data.activityLog).filter(Boolean);
+    }
+    if (!data.activityLog) data.activityLog = [];
+
+    // --- Normalize pricingConfig ---
+    if (!data.pricingConfig || typeof data.pricingConfig !== 'object') {
       data.pricingConfig = JSON.parse(JSON.stringify(initialSeedData.pricingConfig));
-    }
-    if (!data.deliveryLogs) {
-      data.deliveryLogs = JSON.parse(JSON.stringify(initialSeedData.deliveryLogs || []));
-    }
-    
-    // Ensure users is a valid Array
-    if (!data.users || !Array.isArray(data.users)) {
-      if (data.users && typeof data.users === 'object') {
-        data.users = Object.values(data.users);
-      } else {
-        data.users = JSON.parse(JSON.stringify(initialSeedData.users || []));
-      }
+    } else {
+      // Merge missing keys from seed without overwriting existing values
+      const seed = initialSeedData.pricingConfig;
+      Object.keys(seed).forEach(k => {
+        if (data.pricingConfig[k] === undefined) data.pricingConfig[k] = seed[k];
+      });
     }
 
-    // Ensure all seed accounts exist in data.users
+    // --- Normalize users: ALWAYS convert Firebase object-arrays ---
+    if (data.users && !Array.isArray(data.users)) {
+      data.users = Object.values(data.users);
+    }
+    if (!data.users || !Array.isArray(data.users)) {
+      data.users = JSON.parse(JSON.stringify(initialSeedData.users || []));
+    }
+    // Remove null slots
+    data.users = data.users.filter(u => u && typeof u === 'object' && u.username);
+
+    // Ensure all seed accounts exist (login fallback resilience)
     if (Array.isArray(initialSeedData.users)) {
       initialSeedData.users.forEach(seed => {
-        const exists = data.users.some(u => u && u.username && String(u.username).trim().toLowerCase() === seed.username.toLowerCase());
+        const exists = data.users.some(
+          u => u && u.username && String(u.username).trim().toLowerCase() === seed.username.toLowerCase()
+        );
         if (!exists) {
           data.users.push(JSON.parse(JSON.stringify(seed)));
         }
       });
     }
 
+    // --- Normalize customerPricingRules ---
+    if (data.customerPricingRules && !Array.isArray(data.customerPricingRules)) {
+      data.customerPricingRules = Object.values(data.customerPricingRules).filter(Boolean);
+    }
     if (!data.customerPricingRules) {
       data.customerPricingRules = JSON.parse(JSON.stringify(initialSeedData.customerPricingRules || []));
     }
@@ -491,11 +537,23 @@ class Database {
   // Rule 3: Granular Mutations (Push only changed fields/nodes to Firebase)
   saveNode(nodeKey) {
     if (!nodeKey) return;
-    if (this.isFirebaseConnected && this.fbRef) {
-      this.fbRef.child(nodeKey).set(this.data[nodeKey]).catch(err => {
-        console.warn(`Granular Firebase write failed for ${nodeKey}:`, err);
-      });
+    const nodeData = this.data[nodeKey];
+    // Guard: never write undefined to Firebase (causes silent failures)
+    if (nodeData === undefined) {
+      console.warn(`[saveNode] Skipped write — data.${nodeKey} is undefined.`);
+      this.notifyUI();
+      return;
     }
+    if (this.isFirebaseConnected && this.fbRef) {
+      this.fbRef.child(nodeKey).set(nodeData)
+        .then(() => {
+          console.info(`[Firebase] ✅ Node '${nodeKey}' saved successfully.`);
+        })
+        .catch(err => {
+          console.error(`[Firebase] ❌ Write FAILED for '${nodeKey}':`, err);
+        });
+    }
+    // Always notify UI immediately for instant visual feedback
     this.notifyUI();
   }
 
@@ -592,26 +650,35 @@ class Database {
   addGrade({ grade_name, base_price_lkr }) {
     if (!grade_name) return null;
     const cleanName = String(grade_name).trim().toUpperCase();
+    if (!cleanName) return null;
     const cleanPrice = Math.max(0, Number(base_price_lkr) || 0);
 
-    let grades = this.getGrades();
-    if (!Array.isArray(grades)) {
-      grades = Object.values(grades || {});
+    // Always normalize grades from current in-memory state
+    let grades = this.data.concreteGrades;
+    if (!grades || !Array.isArray(grades)) {
+      grades = grades ? Object.values(grades) : [];
     }
-    grades = grades.filter(g => g && typeof g === 'object' && g.grade_name);
+    // Remove invalid/null slots before mutating
+    grades = grades.filter(g => g && typeof g === 'object' && g.grade_name && String(g.grade_name).trim());
 
-    const existing = grades.find(g => g && g.grade_name && String(g.grade_name).trim().toUpperCase() === cleanName);
+    const existing = grades.find(
+      g => String(g.grade_name).trim().toUpperCase() === cleanName
+    );
     if (existing) {
       existing.base_price_lkr = cleanPrice;
       existing.grade_name = cleanName;
+      existing.updated_at = new Date().toISOString();
     } else {
       grades.push({
         id: Date.now(),
         grade_name: cleanName,
-        base_price_lkr: cleanPrice
+        base_price_lkr: cleanPrice,
+        created_at: new Date().toISOString()
       });
     }
+    // Commit to in-memory state BEFORE writing to Firebase
     this.data.concreteGrades = grades;
+    console.info(`[addGrade] Saving grade '${cleanName}' @ LKR ${cleanPrice}/m³. Total grades: ${grades.length}`);
     this.saveNode('concreteGrades');
     return cleanName;
   }
@@ -980,19 +1047,49 @@ class Database {
   }
 
   addUser(userData) {
-    const users = this.getUsers();
-    if (!userData.id) userData.id = Date.now();
-    if (!userData.status) userData.status = 'Active';
-    userData.created_at = new Date().toISOString();
-    users.push(userData);
+    if (!userData || !userData.username) return null;
+    // Normalize current users array before mutation
+    let users = this.data.users;
+    if (!users || !Array.isArray(users)) {
+      users = users ? Object.values(users) : [];
+    }
+    users = users.filter(u => u && typeof u === 'object' && u.username);
+
+    // Check for duplicate username
+    const existingByUsername = users.find(
+      u => String(u.username).trim().toLowerCase() === String(userData.username).trim().toLowerCase()
+    );
+    if (existingByUsername) {
+      // Update existing rather than duplicate
+      Object.assign(existingByUsername, userData);
+      existingByUsername.updated_at = new Date().toISOString();
+      this.data.users = users;
+      console.info(`[addUser] Updated existing user '${userData.username}'.`);
+      this.saveNode('users');
+      return existingByUsername;
+    }
+
+    const newUser = { ...userData };
+    if (!newUser.id) newUser.id = Date.now();
+    if (!newUser.status) newUser.status = 'Active';
+    newUser.created_at = new Date().toISOString();
+
+    users.push(newUser);
+    // Commit to in-memory state BEFORE writing to Firebase
+    this.data.users = users;
+    console.info(`[addUser] Created user '${newUser.username}' (${newUser.role}). Total users: ${users.length}`);
     this.saveNode('users');
-    return userData;
+    return newUser;
   }
 
   updateUser(id, patch) {
     const user = this.getUser(id);
     if (user) {
       Object.assign(user, patch);
+      user.updated_at = new Date().toISOString();
+      // Ensure the in-memory array is clean before writing
+      this.data.users = this.data.users.filter(u => u && typeof u === 'object' && u.username);
+      console.info(`[updateUser] Updated user #${id} (${user.username}).`);
       this.saveNode('users');
     }
     return user;

@@ -715,60 +715,101 @@
       </section>
 
       <!-- VIEW 7: USER MANAGEMENT PANEL (ADMIN & MANAGERS) -->
-      <section id="view-users" class="view-panel hidden space-y-6">
+      <section id="view-users" class="view-panel hidden space-y-4">
+
+        <!-- Page Header Row -->
         <div class="glass-card p-4 sm:p-5">
-          <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h3 class="text-base font-extrabold text-slate-900 flex items-center">
-                <i class="fa-solid fa-users-gear text-blue-600 mr-2"></i> User & Sales Engineer Management Panel
-              </h3>
-              <p class="text-xs text-slate-500">Admins can create, assign roles, edit PINs, and terminate sales engineer profiles.</p>
+              <h2 class="text-base font-extrabold text-slate-900 flex items-center">
+                <i class="fa-solid fa-users-gear text-blue-600 mr-2.5"></i> User &amp; Sales Engineer Management
+              </h2>
+              <p class="text-xs text-slate-500 mt-0.5">Manage login credentials, assign roles, set PINs, and control account access.</p>
             </div>
-            <button onclick="openAddUserModal()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs py-2 px-3.5 rounded-lg transition cursor-pointer shadow-xs flex items-center">
-              <i class="fa-solid fa-user-plus mr-1.5"></i> + Create Sales Engineer Profile
+            <button onclick="openAddUserModal()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs py-2.5 px-4 rounded-xl transition cursor-pointer shadow-md flex items-center gap-1.5">
+              <i class="fa-solid fa-user-plus"></i> + Create User Profile
             </button>
           </div>
+        </div>
 
-          <!-- USERS SUMMARY CARDS -->
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4 text-xs">
-            <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
-              <span class="text-slate-500 block font-medium">Total System Users</span>
-              <span id="user-count-total" class="text-lg font-bold text-slate-800">0</span>
+        <!-- KPI Summary Cards -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+          <div class="glass-card p-3.5 border-l-4 border-slate-400">
+            <span class="text-slate-500 block font-semibold text-[11px] uppercase tracking-wide">Total Users</span>
+            <span id="user-count-total" class="text-2xl font-black text-slate-800">0</span>
+          </div>
+          <div class="glass-card p-3.5 border-l-4 border-blue-500">
+            <span class="text-blue-700 block font-semibold text-[11px] uppercase tracking-wide">Sales Engineers</span>
+            <span id="user-count-engineers" class="text-2xl font-black text-blue-800">0</span>
+          </div>
+          <div class="glass-card p-3.5 border-l-4 border-emerald-500">
+            <span class="text-emerald-700 block font-semibold text-[11px] uppercase tracking-wide">Admins &amp; Managers</span>
+            <span id="user-count-managers" class="text-2xl font-black text-emerald-800">0</span>
+          </div>
+          <div class="glass-card p-3.5 border-l-4 border-red-500">
+            <span class="text-red-700 block font-semibold text-[11px] uppercase tracking-wide">Terminated</span>
+            <span id="user-count-terminated" class="text-2xl font-black text-red-800">0</span>
+          </div>
+        </div>
+
+        <!-- User Profile Card Grid (fills the previously empty black area) -->
+        <div class="glass-card p-4 sm:p-5">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-bold text-slate-900 flex items-center">
+              <i class="fa-solid fa-id-card text-blue-600 mr-2"></i> Active User Profiles
+            </h3>
+            <span class="text-[10px] text-slate-400 font-semibold">Hover card for quick actions</span>
+          </div>
+          <div id="user-cards-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+            <!-- Dynamically populated by renderUsersScreen() -->
+          </div>
+        </div>
+
+        <!-- Search + Frozen Header + Scrollable Table -->
+        <div class="glass-card p-4 sm:p-5">
+          <!-- Search Bar -->
+          <div class="flex flex-wrap items-center gap-3 mb-4">
+            <div class="relative flex-1 min-w-[200px]">
+              <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
+              <input type="text" id="user-search-input" placeholder="Search by name, username, role or mobile..."
+                oninput="filterUsersTable(this.value)"
+                class="w-full pl-8 pr-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:border-blue-400 transition" />
             </div>
-            <div class="bg-blue-50 p-3 rounded-lg border border-blue-200">
-              <span class="text-blue-700 block font-semibold">Sales Engineers</span>
-              <span id="user-count-engineers" class="text-lg font-bold text-blue-800">0</span>
-            </div>
-            <div class="bg-emerald-50 p-3 rounded-lg border border-emerald-200">
-              <span class="text-emerald-700 block font-semibold">Admins & Managers</span>
-              <span id="user-count-managers" class="text-lg font-bold text-emerald-800">0</span>
-            </div>
-            <div class="bg-red-50 p-3 rounded-lg border border-red-200">
-              <span class="text-red-700 block font-semibold">Terminated Accounts</span>
-              <span id="user-count-terminated" class="text-lg font-bold text-red-800">0</span>
-            </div>
+            <span class="text-[11px] text-slate-500 font-semibold whitespace-nowrap">
+              <span id="user-table-count">0</span> users shown
+            </span>
           </div>
 
-          <!-- USERS TABLE -->
-          <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
-              <thead>
-                <tr class="border-b border-slate-200 text-xs font-bold text-slate-500 uppercase tracking-wider bg-slate-50">
-                  <th class="py-3 px-3.5 whitespace-nowrap">User Profile</th>
-                  <th class="py-3 px-3.5 whitespace-nowrap">Username</th>
-                  <th class="py-3 px-3.5 whitespace-nowrap">Role</th>
-                  <th class="py-3 px-3.5 whitespace-nowrap">Mobile Key</th>
-                  <th class="py-3 px-3.5 whitespace-nowrap">Status</th>
-                  <th class="py-3 px-3.5 text-right whitespace-nowrap">Actions</th>
-                </tr>
-              </thead>
-              <tbody id="table-users-body"></tbody>
-            </table>
+          <!-- Table with frozen header + scrollable body -->
+          <div class="rounded-xl border border-slate-200 overflow-hidden">
+            <!-- Frozen Header -->
+            <div class="overflow-x-auto bg-gradient-to-r from-slate-800 to-slate-700">
+              <table class="w-full text-left border-collapse">
+                <thead class="text-white text-[11px] font-bold uppercase tracking-wider">
+                  <tr>
+                    <th class="py-3 px-4 whitespace-nowrap">User Profile</th>
+                    <th class="py-3 px-4 whitespace-nowrap">Username / PIN</th>
+                    <th class="py-3 px-4 whitespace-nowrap">Role</th>
+                    <th class="py-3 px-4 whitespace-nowrap">Mobile Key</th>
+                    <th class="py-3 px-4 whitespace-nowrap">Status</th>
+                    <th class="py-3 px-4 text-right whitespace-nowrap">Actions</th>
+                  </tr>
+                </thead>
+              </table>
+            </div>
+            <!-- Scrollable Body — max 420px -->
+            <div class="overflow-x-auto overflow-y-auto" style="max-height: 420px;">
+              <table class="w-full text-left border-collapse">
+                <tbody id="table-users-body" class="divide-y divide-slate-100 text-xs bg-white">
+                  <!-- Dynamically populated -->
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </section>
 
-      <!-- VIEW 9: MASTER DATABASE CONTROL PANEL (ADMIN & MANAGERS) -->
+
       <section id="view-master-db" class="view-panel hidden space-y-5">
         <div class="glass-card p-4 sm:p-5 border-amber-200 bg-white">
           <div class="flex flex-wrap items-center justify-between gap-3 mb-4">

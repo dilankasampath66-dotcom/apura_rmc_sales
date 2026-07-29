@@ -1857,30 +1857,47 @@ function renderGradesManagerList() {
   if (!Array.isArray(grades)) {
     grades = Object.values(grades || {});
   }
+  grades = grades.filter(g => g && typeof g === 'object' && g.grade_name);
   const container = document.getElementById('grades-list-container');
   const roleStr = String(window.currentRole || currentRole || '').toLowerCase();
   const canManage = roleStr.includes('manager') || roleStr.includes('admin');
 
-  if (container) {
-    if (!grades || grades.length === 0) {
-      container.innerHTML = `<span class="text-slate-400 italic text-xs py-1">No concrete grades configured. Use the form above to add your first grade profile.</span>`;
-      return;
-    }
-    container.innerHTML = grades.map(g => `
-      <div class="flex items-center space-x-2 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-2xs font-semibold">
-        <span class="text-slate-900 font-bold">${g.grade_name || 'N/A'}</span>
-        <span class="text-emerald-700 font-mono">LKR ${(Number(g.base_price_lkr) || 0).toLocaleString()}/m³</span>
+  if (!container) return;
+
+  if (!grades || grades.length === 0) {
+    container.innerHTML = `
+      <div class="w-full flex items-center space-x-2 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-xs text-amber-700">
+        <i class="fa-solid fa-triangle-exclamation text-amber-500"></i>
+        <span>No concrete grades configured yet. Use the form above to add your first grade profile (e.g. M20, M25, M30).</span>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = grades.map(g => {
+    const price = Number(g.base_price_lkr) || 0;
+    const priceColor = price >= 30000 ? 'text-red-700' : price >= 25000 ? 'text-emerald-700' : 'text-blue-700';
+    return `
+      <div class="group flex items-center gap-2 bg-white border border-slate-200 hover:border-blue-300 hover:shadow-md rounded-xl px-3 py-2 transition-all duration-200 shadow-sm">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-slate-700 to-slate-900 text-white text-[10px] font-black flex items-center justify-center flex-shrink-0">
+          ${String(g.grade_name || 'G').replace('M', 'M')}
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="font-black text-slate-900 text-xs">${g.grade_name}</div>
+          <div class="${priceColor} font-mono text-[10px] font-bold">LKR ${price.toLocaleString()}/m³</div>
+        </div>
         ${canManage ? `
-          <button type="button" onclick="editConcreteGradeEntry(${g.id})" title="Edit Grade & Price" class="text-blue-600 hover:text-blue-800 transition ml-1 cursor-pointer font-bold text-xs">
-            <i class="fa-solid fa-pen-to-square"></i>
+          <button type="button" onclick="editConcreteGradeEntry(${g.id})" title="Edit Grade &amp; Price"
+            class="opacity-0 group-hover:opacity-100 text-blue-500 hover:text-blue-700 transition-all cursor-pointer p-1 rounded">
+            <i class="fa-solid fa-pen-to-square text-xs"></i>
           </button>
-          <button type="button" onclick="deleteConcreteGradeEntry(${g.id})" title="Delete Grade" class="text-slate-400 hover:text-red-600 transition ml-1 cursor-pointer font-bold">
+          <button type="button" onclick="deleteConcreteGradeEntry(${g.id})" title="Delete Grade"
+            class="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 transition-all cursor-pointer p-1 rounded font-bold text-sm leading-none">
             &times;
           </button>
         ` : ''}
       </div>
-    `).join('');
-  }
+    `;
+  }).join('');
 }
 
 window.editConcreteGradeEntry = function(id) {
@@ -2960,11 +2977,19 @@ window.fillDemoAccount = function(username, pin) {
   window.handleUserLogin();
 };
 
-window.renderUsersScreen = function() {
-  const users = window.db.getUsers();
-  const tbody = document.getElementById('table-users-body');
-  const isAdmin = currentUser && currentUser.role === 'Admin';
+// Store all users for filtering
+let _allUsersForTable = [];
 
+window.renderUsersScreen = function() {
+  let users = window.db.getUsers();
+  if (!Array.isArray(users)) users = Object.values(users || {});
+  users = users.filter(u => u && typeof u === 'object' && u.username);
+
+  _allUsersForTable = users;
+
+  const isAdmin = currentUser && (currentUser.role === 'Admin' || String(currentRole).toLowerCase().includes('admin'));
+
+  // KPI counters
   const totalUsers = users.length;
   const engineers = users.filter(u => u.role === 'Sales Engineer').length;
   const managers = users.filter(u => u.role === 'Admin' || u.role === 'Manager').length;
@@ -2980,55 +3005,136 @@ window.renderUsersScreen = function() {
   if (elMan) elMan.textContent = managers;
   if (elTerm) elTerm.textContent = terminated;
 
-  if (tbody) {
-    tbody.innerHTML = users.map(u => {
-      const isTerminated = u.status === 'Terminated';
-      return `
-        <tr class="border-b border-slate-200 text-xs hover:bg-slate-50 transition">
-          <td class="py-3 px-3.5 font-bold text-slate-900 whitespace-nowrap align-middle">
-            <div class="flex items-center space-x-2">
-              <div class="w-7 h-7 rounded-full ${u.role === 'Admin' ? 'bg-red-600' : (u.role === 'Manager' ? 'bg-purple-600' : 'bg-blue-600')} text-white font-bold text-[10px] flex items-center justify-center">
-                ${u.name.charAt(0).toUpperCase()}
-              </div>
-              <div>
-                <div class="font-bold text-slate-900">${u.name}</div>
-                <div class="text-[10px] text-slate-400 font-mono">ID #${u.id}</div>
-              </div>
+  // Render User Profile Cards (fills the previously empty black area)
+  const cardsGrid = document.getElementById('user-cards-grid');
+  if (cardsGrid) {
+    const activeUsers = users.filter(u => u.status !== 'Terminated');
+    if (activeUsers.length === 0) {
+      cardsGrid.innerHTML = `<div class="col-span-full text-center py-8 text-slate-400 text-xs italic">
+        <i class="fa-solid fa-users text-3xl mb-2 block text-slate-200"></i>No active user profiles. Click "+ Create User Profile" to add the first user.
+      </div>`;
+    } else {
+      const roleColors = {
+        'Admin': { bg: 'from-red-600 to-red-800', badge: 'bg-red-100 text-red-800 border-red-200', icon: 'fa-shield-halved' },
+        'Manager': { bg: 'from-purple-600 to-purple-800', badge: 'bg-purple-100 text-purple-800 border-purple-200', icon: 'fa-user-tie' },
+        'Sales Engineer': { bg: 'from-blue-500 to-blue-700', badge: 'bg-blue-100 text-blue-800 border-blue-200', icon: 'fa-hard-hat' }
+      };
+      cardsGrid.innerHTML = activeUsers.map(u => {
+        const rc = roleColors[u.role] || roleColors['Sales Engineer'];
+        const initials = (u.name || 'U').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+        return `
+          <div class="group relative bg-white border border-slate-200 hover:border-blue-300 hover:shadow-lg rounded-2xl p-3 text-center transition-all duration-200 cursor-default overflow-hidden">
+            <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${rc.bg} opacity-80 rounded-t-2xl"></div>
+            <div class="w-12 h-12 rounded-full bg-gradient-to-br ${rc.bg} text-white font-black text-base flex items-center justify-center mx-auto mb-2 mt-1 shadow-md">
+              ${initials}
             </div>
-          </td>
-          <td class="py-3 px-3.5 font-mono text-slate-700 whitespace-nowrap align-middle font-semibold">${u.username}</td>
-          <td class="py-3 px-3.5 whitespace-nowrap align-middle">
-            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${
-              u.role === 'Admin' ? 'bg-red-100 text-red-800 border border-red-300' : (u.role === 'Manager' ? 'bg-purple-100 text-purple-800 border border-purple-300' : 'bg-blue-100 text-blue-800 border border-blue-300')
-            }">
-              ${u.role}
-            </span>
-          </td>
-          <td class="py-3 px-3.5 font-mono text-slate-700 whitespace-nowrap align-middle">📱 ${u.phone || 'N/A'}</td>
-          <td class="py-3 px-3.5 whitespace-nowrap align-middle">
-            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${isTerminated ? 'bg-red-100 text-red-800 border border-red-300' : 'bg-emerald-100 text-emerald-800 border border-emerald-300'}">
-              ${isTerminated ? '🔴 Terminated' : '🟢 Active'}
-            </span>
-          </td>
-          <td class="py-3 px-3.5 text-right whitespace-nowrap align-middle">
-            <div class="flex items-center justify-end space-x-1.5">
-              <button onclick="openEditUserModal(${u.id})" title="Edit Profile & Permissions" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 text-xs px-2 py-1 rounded transition cursor-pointer font-semibold flex items-center">
-                <i class="fa-solid fa-user-pen mr-1 text-[10px]"></i> Edit
+            <div class="font-bold text-slate-900 text-[11px] leading-tight truncate">${u.name}</div>
+            <div class="text-slate-400 text-[10px] font-mono truncate">@${u.username}</div>
+            <span class="inline-block mt-1.5 text-[9px] font-bold px-2 py-0.5 rounded-full border ${rc.badge}">${u.role}</span>
+            <!-- Hover Actions -->
+            <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-200">
+              <button onclick="openEditUserModal(${u.id})" class="bg-white text-slate-800 font-bold text-[10px] px-3 py-1.5 rounded-lg hover:bg-blue-50 transition w-[80%]">
+                <i class="fa-solid fa-pen-to-square mr-1 text-blue-600"></i>Edit Profile
               </button>
-              <button onclick="toggleUserStatus(${u.id})" title="${isTerminated ? 'Reactivate User' : 'Terminate User Access'}" class="${isTerminated ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100' : 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100'} text-xs px-2 py-1 rounded transition cursor-pointer font-bold flex items-center">
-                ${isTerminated ? '🟢 Reactivate' : '🚫 Terminate'}
+              <button onclick="toggleUserStatus(${u.id})" class="bg-amber-500 text-white font-bold text-[10px] px-3 py-1.5 rounded-lg hover:bg-amber-600 transition w-[80%]">
+                <i class="fa-solid fa-ban mr-1"></i>Terminate
               </button>
-              ${isAdmin && u.username !== 'admin' ? `
-                <button onclick="deleteUserEntry(${u.id})" title="Delete User Account" class="bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs p-1 px-1.5 rounded transition cursor-pointer">
-                  <i class="fa-solid fa-trash"></i>
-                </button>
-              ` : ''}
             </div>
-          </td>
-        </tr>
-      `;
-    }).join('');
+          </div>
+        `;
+      }).join('');
+    }
   }
+
+  // Render table rows
+  renderUsersTableRows(users, isAdmin);
+};
+
+function renderUsersTableRows(users, isAdmin) {
+  const tbody = document.getElementById('table-users-body');
+  const countEl = document.getElementById('user-table-count');
+  if (countEl) countEl.textContent = users.length;
+
+  if (!tbody) return;
+
+  if (users.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="py-10 text-center text-slate-400 text-xs italic">
+      <i class="fa-solid fa-users-slash text-2xl mb-2 block text-slate-200"></i>No users found. Create a profile to get started.
+    </td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = users.map(u => {
+    const isTerminated = u.status === 'Terminated';
+    const roleCls = u.role === 'Admin'
+      ? 'bg-red-100 text-red-800 border border-red-200'
+      : u.role === 'Manager'
+        ? 'bg-purple-100 text-purple-800 border border-purple-200'
+        : 'bg-blue-100 text-blue-800 border border-blue-200';
+    const avatarBg = u.role === 'Admin' ? 'from-red-500 to-red-700' : u.role === 'Manager' ? 'from-purple-500 to-purple-700' : 'from-blue-500 to-blue-700';
+    const initials = (u.name || 'U').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+
+    return `
+      <tr class="border-b border-slate-100 hover:bg-blue-50/40 transition text-xs ${isTerminated ? 'opacity-60' : ''}">
+        <td class="py-3 px-4 whitespace-nowrap align-middle">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-full bg-gradient-to-br ${avatarBg} text-white font-black text-[10px] flex items-center justify-center flex-shrink-0 shadow-sm">
+              ${initials}
+            </div>
+            <div>
+              <div class="font-bold text-slate-900">${u.name}</div>
+              <div class="text-[10px] text-slate-400 font-mono">Created: ${u.created_at ? new Date(u.created_at).toLocaleDateString('en-GB') : 'Legacy'}</div>
+            </div>
+          </div>
+        </td>
+        <td class="py-3 px-4 whitespace-nowrap align-middle">
+          <div class="font-mono font-bold text-slate-800 text-[11px]">${u.username}</div>
+          <div class="text-[10px] text-slate-400">PIN: ${'•'.repeat(Math.min(u.pin?.length || 4, 4))}</div>
+        </td>
+        <td class="py-3 px-4 whitespace-nowrap align-middle">
+          <span class="px-2 py-0.5 rounded-md text-[10px] font-bold ${roleCls}">${u.role}</span>
+        </td>
+        <td class="py-3 px-4 font-mono text-slate-600 whitespace-nowrap align-middle text-[11px]">📱 ${u.phone || '—'}</td>
+        <td class="py-3 px-4 whitespace-nowrap align-middle">
+          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold ${isTerminated ? 'bg-red-100 text-red-800 border border-red-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'}">
+            <span class="w-1.5 h-1.5 rounded-full ${isTerminated ? 'bg-red-500' : 'bg-emerald-500'} inline-block"></span>
+            ${isTerminated ? 'Terminated' : 'Active'}
+          </span>
+        </td>
+        <td class="py-3 px-4 text-right whitespace-nowrap align-middle">
+          <div class="flex items-center justify-end gap-1.5">
+            <button onclick="openEditUserModal(${u.id})" title="Edit Profile" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-[10px] px-2.5 py-1 rounded-lg transition cursor-pointer font-semibold flex items-center gap-1">
+              <i class="fa-solid fa-user-pen text-blue-600"></i> Edit
+            </button>
+            <button onclick="toggleUserStatus(${u.id})" title="${isTerminated ? 'Reactivate' : 'Terminate'}"
+              class="${isTerminated ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100' : 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100'} text-[10px] px-2.5 py-1 rounded-lg transition cursor-pointer font-bold flex items-center gap-1">
+              ${isTerminated ? '<i class="fa-solid fa-check-circle"></i> Reactivate' : '<i class="fa-solid fa-ban"></i> Terminate'}
+            </button>
+            ${isAdmin && u.username !== 'admin' ? `
+              <button onclick="deleteUserEntry(${u.id})" title="Delete User" class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-[10px] p-1.5 rounded-lg transition cursor-pointer">
+                <i class="fa-solid fa-trash text-[10px]"></i>
+              </button>
+            ` : ''}
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+window.filterUsersTable = function(query) {
+  const q = String(query || '').trim().toLowerCase();
+  if (!q) {
+    renderUsersTableRows(_allUsersForTable, currentUser && (currentUser.role === 'Admin' || String(currentRole).toLowerCase().includes('admin')));
+    return;
+  }
+  const filtered = _allUsersForTable.filter(u =>
+    (u.name && u.name.toLowerCase().includes(q)) ||
+    (u.username && u.username.toLowerCase().includes(q)) ||
+    (u.role && u.role.toLowerCase().includes(q)) ||
+    (u.phone && u.phone.includes(q))
+  );
+  renderUsersTableRows(filtered, currentUser && (currentUser.role === 'Admin' || String(currentRole).toLowerCase().includes('admin')));
 };
 
 window.openAddUserModal = function() {
@@ -3069,31 +3175,46 @@ window.openEditUserModal = function(id) {
 window.saveUserProfile = function(e) {
   if (e) e.preventDefault();
 
-  const id = document.getElementById('user-edit-id').value;
-  const name = document.getElementById('user-edit-name').value.trim();
-  const username = document.getElementById('user-edit-username').value.trim().toLowerCase();
-  const pin = document.getElementById('user-edit-pin').value.trim();
-  const role = document.getElementById('user-edit-role').value;
-  const phone = document.getElementById('user-edit-phone').value.trim();
-  const status = document.getElementById('user-edit-status').value;
+  const id = document.getElementById('user-edit-id')?.value?.trim();
+  const name = document.getElementById('user-edit-name')?.value?.trim();
+  const username = document.getElementById('user-edit-username')?.value?.trim().toLowerCase();
+  const pin = document.getElementById('user-edit-pin')?.value?.trim();
+  const role = document.getElementById('user-edit-role')?.value;
+  const phone = document.getElementById('user-edit-phone')?.value?.trim();
+  const status = document.getElementById('user-edit-status')?.value;
 
+  if (!name || !username) {
+    showToast('Full Name and Username are required.', 'error');
+    return;
+  }
+  if (!pin || pin.length < 3) {
+    showToast('PIN Code must be at least 3 characters.', 'error');
+    return;
+  }
   if (!/^\d{10}$/.test(phone)) {
     showToast('Invalid Mobile Key: Must be exactly 10 digits (e.g. 0771234567).', 'error');
     return;
   }
 
+  const userData = { name, username, pin, role, phone, status };
+
   if (id) {
-    window.db.updateUser(id, { name, username, pin, role, phone, status });
+    window.db.updateUser(id, userData);
     window.db.logActivity('USER_UPDATED', currentRole, `Updated user profile #${id} (${name} - ${role}).`);
-    showToast(`Updated user profile for ${name}!`, 'success');
+    showToast(`\u2705 Updated profile for ${name}!`, 'success');
   } else {
-    window.db.addUser({ name, username, pin, role, phone, status });
+    const created = window.db.addUser(userData);
+    if (!created) {
+      showToast('Failed to create user. Check fields and try again.', 'error');
+      return;
+    }
     window.db.logActivity('USER_CREATED', currentRole, `Created new ${role} profile for ${name}.`);
-    showToast(`Created new ${role} profile for ${name}!`, 'success');
+    showToast(`\u2705 Created ${role} profile for ${name}! Credentials: ${username} / PIN: ${pin}`, 'success');
   }
 
   window.closeModal('modal-user-edit');
-  window.renderUsersScreen();
+  // Immediately re-render the users screen (Firebase listener will also update later)
+  if (typeof window.renderUsersScreen === 'function') window.renderUsersScreen();
 };
 
 window.toggleUserStatus = function(id) {
