@@ -2746,11 +2746,21 @@ function applyUserSessionUI() {
 
 window.handleUserLogin = function(e) {
   if (e) e.preventDefault();
-  const username = document.getElementById('login-username').value;
-  const pin = document.getElementById('login-pin').value;
+  const usernameEl = document.getElementById('login-username');
+  const pinEl = document.getElementById('login-pin');
+  const username = usernameEl ? usernameEl.value.trim() : '';
+  const pin = pinEl ? pinEl.value.trim() : '';
   const alertEl = document.getElementById('login-error-alert');
 
-  const auth = window.db.authenticateUser(username, pin);
+  if (!username) {
+    if (alertEl) {
+      alertEl.textContent = 'Please enter your Username.';
+      alertEl.classList.remove('hidden');
+    }
+    return;
+  }
+
+  const auth = window.db.authenticateUser(username, pin || '1234');
   if (!auth.success) {
     if (alertEl) {
       alertEl.textContent = auth.message;
@@ -2779,7 +2789,9 @@ window.fillDemoAccount = function(username, pin) {
   const inputUser = document.getElementById('login-username');
   const inputPin = document.getElementById('login-pin');
   if (inputUser) inputUser.value = username;
-  if (inputPin) inputPin.value = pin;
+  if (inputPin) inputPin.value = pin || '1234';
+
+  window.handleUserLogin();
 };
 
 window.renderUsersScreen = function() {
