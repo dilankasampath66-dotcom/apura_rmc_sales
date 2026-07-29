@@ -1,101 +1,204 @@
-/* Tokyo Cement Co. (Lanka) PLC - Official Website Palette & Design Tokens */
+/* =============================================================
+   RMC REGIONAL PLANT — Production-Grade CSS Design System
+   Palette: Pale Aqua → Light Sky Blue → Dark Indigo → Medium Blue
+   Premium SaaS Micro-interaction Shell
+   ============================================================= */
+
+/* --- CSS Variables (Root) --- */
 :root {
-  --tokyo-red: #E31E24;
-  --tokyo-red-dark: #C1121F;
-  --tokyo-navy: #0F172A;
-  --tokyo-slate: #1E293B;
-  --tokyo-gold: #F59E0B;
-  --tokyo-gray-bg: #FAFAFA;
-  --tokyo-card-bg: #FFFFFF;
-  --tokyo-border: #E2E8F0;
+  /* === BRAND PALETTE === */
+  --tokyo-red:          #E31E24;
+  --tokyo-red-dark:     #C1121F;
+  --tokyo-navy:         #0F172A;
+  --tokyo-slate:        #1E293B;
+  --tokyo-gold:         #F59E0B;
+  --tokyo-gray-bg:      #F8FAFC;
+  --tokyo-card-bg:      #FFFFFF;
+  --tokyo-border:       #E2E8F0;
 
-  --color-lead: #2563EB;
-  --color-quote: #D97706;
-  --color-negotiation: #7C3AED;
-  --color-won: #059669;
-  --color-lost: #E31E24;
+  /* === AQUA-INDIGO PREMIUM PALETTE === */
+  --pale-aqua:          #D0E7E6;
+  --sky-blue:           #95CCDD;
+  --medium-blue:        #4274D9;
+  --dark-indigo:        #293681;
 
-  --excel-green: #107C41;
+  /* === SEMANTIC STAGE COLORS === */
+  --color-lead:         #2563EB;
+  --color-quote:        #D97706;
+  --color-negotiation:  #7C3AED;
+  --color-won:          #059669;
+  --color-lost:         #E31E24;
+  --excel-green:        #107C41;
+
+  /* === BACKGROUND & OVERLAY === */
+  --body-bg-image:      url('https://images.unsplash.com/photo-1518640467707-6811f4a6ab73?q=80&w=2000&auto=format&fit=crop');
+  --bg-overlay-color:   rgba(245, 247, 250, 0.93);
+
+  /* === CONTAINERS === */
+  --container-bg:       #ffffff;
+  --container-radius:   12px;
+  --container-border:   1px solid rgba(226, 232, 240, 0.8);
+  --shadow-soft:        0 4px 20px rgba(0, 0, 0, 0.05);
+  --shadow-hover:       0 12px 32px rgba(0, 0, 0, 0.10);
+  --shadow-card:        0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03);
+
+  /* === ANIMATIONS === */
+  --transition-fast:    all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-lift:    transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+                        box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* =============================================
+   1. GLOBAL BODY & TYPOGRAPHY
+   ============================================= */
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background-color: var(--tokyo-gray-bg);
-  color: #0F172A;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   margin: 0;
   padding: 0;
   min-height: 100vh;
   overflow-x: hidden;
   touch-action: manipulation;
+  color: #334155;
+  line-height: 1.6;
+  background-color: var(--tokyo-gray-bg);
 }
 
-/* Custom Minimalist Scrollbars */
-::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
-}
-::-webkit-scrollbar-track {
-  background: #f1f5f9;
-}
-::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+/* =============================================
+   2. APP SHELL — SIDEBAR + CONTENT FLEX GRID
+   Critical fix: the main content must sit NEXT
+   to the sidebar, not below it.
+   ============================================= */
+
+/* The outer wrapper — full height, flexbox row */
+.rmc-shell {
+  display: flex;
+  width: 100%;
+  flex: 1;
+  overflow: hidden;
 }
 
-/* Tokyo Cement Official Brand Badge & Logo Glow */
-.tokyo-brand-badge {
-  background: linear-gradient(135deg, #E31E24 0%, #B91C1C 100%);
-  color: #FFFFFF;
-  box-shadow: 0 4px 10px rgba(227, 30, 36, 0.25);
-  transition: all 0.3s ease;
+/* Sidebar — fixed width, never shrinks */
+.rmc-sidebar {
+  width: 14rem;         /* 224px — w-56 */
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  min-height: calc(100vh - 100px);
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(8px);
+  border-right: 1px solid rgba(226, 232, 240, 0.7);
+}
+@media (min-width: 1280px) {
+  .rmc-sidebar { width: 16rem; } /* 256px — w-64 at xl+ */
 }
 
-.tokyo-brand-badge:hover {
-  transform: scale(1.05);
-  box-shadow: 0 6px 16px rgba(227, 30, 36, 0.35);
+/* Main content — grows to fill all remaining space */
+.rmc-main {
+  flex: 1;
+  min-width: 0;           /* CRITICAL: prevents flex child overflow */
+  overflow-y: auto;
+  padding: 0.75rem;
+}
+@media (min-width: 640px) {
+  .rmc-main { padding: 1.25rem; }
 }
 
-/* Header Animated Shimmer Strip */
-.tokyo-shimmer-strip {
-  background: linear-gradient(90deg, #1E293B 0%, #0F172A 50%, #1E293B 100%);
+/* =============================================
+   3. KPI METRIC CARDS (Header Strip)
+   ============================================= */
+.rmc-kpi-card {
+  background: rgba(255, 255, 255, 0.90);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 0.625rem;
+  padding: 0.375rem 0.5rem;
+  box-shadow: var(--shadow-card);
+  transition: var(--transition-lift);
+}
+.rmc-kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(66, 116, 217, 0.10);
+  border-color: rgba(148, 204, 221, 0.6);
 }
 
-/* Stage Badge Classes - Light Minimalist */
-.badge-lead {
-  background-color: #eff6ff;
-  color: #1d4ed8;
-  border: 1px solid #bfdbfe;
-}
-.badge-quote {
-  background-color: #fffbeb;
-  color: #b45309;
-  border: 1px solid #fde68a;
-}
-.badge-negotiation {
-  background-color: #f5f3ff;
-  color: #6d28d9;
-  border: 1px solid #ddd6fe;
-}
-.badge-won {
-  background-color: #ecfdf5;
-  color: #047857;
-  border: 1px solid #a7f3d0;
-}
-.badge-lost {
-  background-color: #fef2f2;
-  color: #b91c1c;
-  border: 1px solid #fecaca;
+/* =============================================
+   4. GLASS CARDS — Premium Container
+   ============================================= */
+.glass-card {
+  background: var(--container-bg);
+  border: var(--container-border);
+  border-radius: var(--container-radius);
+  box-shadow: var(--shadow-card);
+  transition: var(--transition-lift);
+  overflow: hidden;
 }
 
-/* Kanban Board Column Headers */
-.kanban-col-lead { border-top: 4px solid var(--color-lead); }
-.kanban-col-quote { border-top: 4px solid var(--color-quote); }
+.glass-card:hover {
+  border-color: rgba(148, 204, 221, 0.5);
+  box-shadow: 0 8px 24px rgba(41, 54, 129, 0.07);
+}
+
+.glass-card-hover {
+  transition: var(--transition-lift);
+}
+.glass-card-hover:hover {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-hover);
+}
+
+/* =============================================
+   5. SIDEBAR NAV LINKS — Premium Micro-interactions
+   ============================================= */
+.nav-link {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border-radius: 0.625rem;
+  color: #475569;
+  text-decoration: none;
+  transition: var(--transition-fast);
+  border-left: 3px solid transparent;
+  gap: 0.5rem;
+}
+
+.nav-link:hover {
+  background: linear-gradient(90deg, rgba(208, 231, 230, 0.35) 0%, rgba(148, 204, 221, 0.15) 100%);
+  color: var(--dark-indigo);
+  border-left-color: var(--medium-blue);
+  transform: translateX(2px);
+}
+
+.nav-link.active,
+.nav-link[style*="border-l-4"] {
+  background: linear-gradient(90deg, rgba(227, 30, 36, 0.08) 0%, rgba(227, 30, 36, 0.03) 100%);
+  color: var(--tokyo-red);
+  border-left-color: var(--tokyo-red);
+  font-weight: 700;
+}
+
+/* =============================================
+   6. STAGE BADGE CLASSES
+   ============================================= */
+.badge-lead        { background-color: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.badge-quote       { background-color: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+.badge-negotiation { background-color: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe; }
+.badge-won         { background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+.badge-lost        { background-color: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+
+/* =============================================
+   7. KANBAN BOARD COLUMNS
+   ============================================= */
+.kanban-col-lead        { border-top: 4px solid var(--color-lead); }
+.kanban-col-quote       { border-top: 4px solid var(--color-quote); }
 .kanban-col-negotiation { border-top: 4px solid var(--color-negotiation); }
-.kanban-col-won { border-top: 4px solid var(--color-won); }
-.kanban-col-lost { border-top: 4px solid var(--color-lost); }
+.kanban-col-won         { border-top: 4px solid var(--color-won); }
+.kanban-col-lost        { border-top: 4px solid var(--color-lost); }
 
 .kanban-header-sticky {
   position: sticky;
@@ -108,23 +211,6 @@ body {
   border-bottom: 1px solid #e2e8f0;
 }
 
-/* Custom Sleek Scrollbar */
-.custom-scrollbar::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
-}
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-}
-
-/* Drag and Drop Visual Indicators */
 .kanban-column {
   transition: background-color 0.2s ease, border-color 0.2s ease;
   max-height: calc(100vh - 210px);
@@ -133,72 +219,64 @@ body {
 
 .kanban-column.drag-over {
   background-color: #f1f5f9 !important;
-  border-color: #3b82f6 !important;
-  box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.3);
+  border-color: var(--medium-blue) !important;
+  box-shadow: inset 0 0 0 2px rgba(66, 116, 217, 0.25);
 }
 
-.kanban-card.dragging {
-  opacity: 0.4;
-  transform: scale(0.98);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+.kanban-card { cursor: grab; user-select: none; }
+.kanban-card.dragging { opacity: 0.4; transform: scale(0.98); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2); }
+.kanban-card:active { cursor: grabbing; }
+
+/* =============================================
+   8. CUSTOM SCROLLBARS
+   ============================================= */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: #f1f5f9; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+.custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* =============================================
+   9. BRAND BADGE & HEADER
+   ============================================= */
+.tokyo-brand-badge {
+  background: linear-gradient(135deg, #E31E24 0%, #B91C1C 100%);
+  color: #FFFFFF;
+  box-shadow: 0 4px 10px rgba(227, 30, 36, 0.25);
+  transition: var(--transition-fast);
+}
+.tokyo-brand-badge:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(227, 30, 36, 0.35);
 }
 
-.kanban-card {
-  cursor: grab;
-  user-select: none;
-}
-
-.kanban-card:active {
-  cursor: grabbing;
-}
-
-/* Tokyo Cement Glass Cards */
-.glass-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.75rem;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03);
-}
-
-.glass-card-hover {
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.glass-card-hover:hover {
-  background: #ffffff;
-  border-color: #cbd5e1;
-  transform: translateY(-3px);
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
-}
-
-/* Excel Export Button Styling */
+/* =============================================
+   10. PREMIUM BUTTON STYLES
+   ============================================= */
 .btn-excel {
-  background-color: #107c41;
+  background: linear-gradient(135deg, #107c41 0%, #0e6b37 100%);
   color: #ffffff;
   font-weight: 600;
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.5rem 1rem;
+  padding: 0.45rem 1rem;
   border-radius: 0.5rem;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(16, 124, 65, 0.15);
+  transition: var(--transition-lift);
+  box-shadow: 0 2px 6px rgba(16, 124, 65, 0.20);
 }
-
 .btn-excel:hover {
-  background-color: #0e6b37;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(16, 124, 65, 0.25);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(16, 124, 65, 0.28);
 }
+.btn-excel-sm { padding: 0.3rem 0.75rem; font-size: 0.75rem; }
 
-.btn-excel-sm {
-  padding: 0.35rem 0.75rem;
-  font-size: 0.75rem;
-}
-
-/* Master Database Download & Thermal Print Buttons */
 .btn-db-download {
-  background-color: #0f172a;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
   color: #ffffff;
   font-weight: 600;
   display: inline-flex;
@@ -206,19 +284,17 @@ body {
   gap: 0.4rem;
   padding: 0.45rem 0.9rem;
   border-radius: 0.5rem;
-  transition: all 0.2s ease;
+  transition: var(--transition-lift);
   border: 1px solid #334155;
 }
-
 .btn-db-download:hover {
-  background-color: #1e293b;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.22);
   border-color: #475569;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.2);
 }
 
 .btn-thermal-print {
-  background-color: #1a202c;
+  background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
   color: #ffffff;
   font-weight: 700;
   display: inline-flex;
@@ -227,48 +303,72 @@ body {
   gap: 0.4rem;
   padding: 0.6rem 1rem;
   border-radius: 0.5rem;
-  transition: all 0.2s ease;
+  transition: var(--transition-lift);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
-
 .btn-thermal-print:hover {
-  background-color: #2d3748;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.22);
 }
 
-/* Pulse animation for AI recommendations */
-@keyframes pulse-border-light {
-  0% { box-shadow: 0 0 0 0 rgba(227, 30, 36, 0.25); }
-  70% { box-shadow: 0 0 0 10px rgba(227, 30, 36, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(227, 30, 36, 0); }
-}
-
-.ai-pulse {
-  animation: pulse-border-light 2.5s infinite;
-}
-
-/* Timeframe Selector Pills */
+/* =============================================
+   11. TIMEFRAME SELECTOR PILLS
+   ============================================= */
 .timeframe-pill {
   padding: 0.35rem 0.85rem;
   font-size: 0.75rem;
   font-weight: 600;
   border-radius: 0.5rem;
-  transition: all 0.2s ease;
+  transition: var(--transition-fast);
   cursor: pointer;
   border: 1px solid #e2e8f0;
   background-color: #ffffff;
   color: #64748b;
 }
-
 .timeframe-pill.active {
-  background-color: #E31E24;
+  background: linear-gradient(135deg, var(--tokyo-red) 0%, var(--tokyo-red-dark) 100%);
   color: #ffffff;
-  border-color: #E31E24;
-  box-shadow: 0 2px 6px rgba(227, 30, 36, 0.3);
+  border-color: var(--tokyo-red);
+  box-shadow: 0 3px 8px rgba(227, 30, 36, 0.28);
 }
 
-/* THERMAL PRINTER RECEIPT STYLING (80mm MONOCHROME MINIMALIST) */
+/* =============================================
+   12. PREMIUM TYPOGRAPHY GRADIENT
+   Usage: <span class="gradient-heading">Title</span>
+   ============================================= */
+.gradient-heading {
+  background: linear-gradient(135deg, var(--dark-indigo) 0%, var(--medium-blue) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 800;
+}
+
+/* =============================================
+   13. ANIMATIONS
+   ============================================= */
+@keyframes pulse-border-light {
+  0%   { box-shadow: 0 0 0 0   rgba(227, 30, 36, 0.25); }
+  70%  { box-shadow: 0 0 0 10px rgba(227, 30, 36, 0); }
+  100% { box-shadow: 0 0 0 0   rgba(227, 30, 36, 0); }
+}
+.ai-pulse { animation: pulse-border-light 2.5s infinite; }
+
+@keyframes slideIn {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+.toast-msg { animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.view-panel:not(.hidden) { animation: fadeInUp 0.28s cubic-bezier(0.16, 1, 0.3, 1); }
+
+/* =============================================
+   14. THERMAL PRINTER RECEIPT
+   ============================================= */
 .thermal-receipt-paper {
   width: 320px;
   max-width: 100%;
@@ -282,48 +382,26 @@ body {
   border: 1px dashed #475569;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
+.thermal-receipt-paper .divider        { border-top: 1px dashed #000000; margin: 8px 0; }
+.thermal-receipt-paper .divider-double { border-top: 2px solid  #000000; margin: 8px 0; }
 
-.thermal-receipt-paper .divider {
-  border-top: 1px dashed #000000;
-  margin: 8px 0;
-}
-
-.thermal-receipt-paper .divider-double {
-  border-top: 2px solid #000000;
-  margin: 8px 0;
-}
-
-/* PRINT MEDIA OVERRIDES FOR 80mm THERMAL PRINTERS */
 @media print {
-  body * {
-    visibility: hidden !important;
-  }
-  #thermal-print-area, #thermal-print-area * {
-    visibility: visible !important;
-  }
+  body * { visibility: hidden !important; }
+  #thermal-print-area, #thermal-print-area * { visibility: visible !important; }
   #thermal-print-area {
     position: absolute !important;
-    left: 0 !important;
-    top: 0 !important;
+    left: 0 !important; top: 0 !important;
     width: 80mm !important;
-    margin: 0 !important;
-    padding: 2mm !important;
-    background: #ffffff !important;
-    color: #000000 !important;
+    margin: 0 !important; padding: 2mm !important;
+    background: #ffffff !important; color: #000000 !important;
   }
-  .thermal-receipt-paper {
-    width: 100% !important;
-    border: none !important;
-    box-shadow: none !important;
-    padding: 0 !important;
-  }
-  @page {
-    size: 80mm auto;
-    margin: 0;
-  }
+  .thermal-receipt-paper { width: 100% !important; border: none !important; box-shadow: none !important; padding: 0 !important; }
+  @page { size: 80mm auto; margin: 0; }
 }
 
-/* MOBILE RESPONSIVE SPECIFIC OVERRIDES FOR IPHONE 15 & REDMI C13 */
+/* =============================================
+   15. MOBILE RESPONSIVE (iPhone 15 & Redmi C13)
+   ============================================= */
 .safe-bottom-nav {
   padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 12px));
   padding-top: 0.4rem;
@@ -334,27 +412,16 @@ body {
 }
 
 @media (max-width: 767px) {
-  body {
-    touch-action: manipulation;
-  }
-
-  main {
-    padding-bottom: 5.5rem !important;
-  }
+  body { touch-action: manipulation; }
+  main { padding-bottom: 5.5rem !important; }
 
   input, select, textarea {
     font-size: 13px !important;
     line-height: 1.3 !important;
   }
+  button { touch-action: manipulation; }
 
-  button {
-    touch-action: manipulation;
-  }
-
-  .btn-excel-sm, .btn-db-download {
-    min-height: 36px;
-    font-size: 12px !important;
-  }
+  .btn-excel-sm, .btn-db-download { min-height: 36px; font-size: 12px !important; }
 
   .kanban-mobile-swipe {
     display: flex;
@@ -364,7 +431,6 @@ body {
     padding-bottom: 1rem;
     -webkit-overflow-scrolling: touch;
   }
-
   .kanban-column {
     scroll-snap-align: center;
     min-width: 82vw;
@@ -373,19 +439,7 @@ body {
   }
 
   #toast-container {
-    bottom: 5rem;
-    right: 0.75rem;
-    left: 0.75rem;
+    bottom: 5rem; right: 0.75rem; left: 0.75rem;
     width: calc(100% - 1.5rem);
   }
-}
-
-/* Toast animations */
-.toast-msg {
-  animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes slideIn {
-  from { transform: translateY(100%); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
 }

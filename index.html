@@ -24,11 +24,11 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
-<body class="bg-slate-50 text-slate-800 flex flex-col min-h-screen">
+<body class="text-slate-800 flex flex-col min-h-screen" style="background-image: linear-gradient(var(--bg-overlay-color), var(--bg-overlay-color)), var(--body-bg-image); background-size: cover; background-position: center; background-attachment: fixed;">
 
   <!-- TOP HEADER & ROLE SWITCHER -->
-  <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
-    <div class="max-w-7xl mx-auto px-3 sm:px-4 py-2 flex flex-wrap items-center justify-between gap-2">
+  <header class="sticky top-0 z-40" style="background: rgba(255,255,255,0.92); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(226,232,240,0.8); box-shadow: 0 2px 16px rgba(0,0,0,0.06);">
+    <div class="w-full px-3 sm:px-4 py-2 flex flex-wrap items-center justify-between gap-2">
       <div class="flex items-center space-x-2">
         <!-- Mobile Menu Toggle Hamburger (Visible on Mobile) -->
         <button id="btn-mobile-menu" onclick="toggleMobileNavDrawer()" class="md:hidden p-1.5 text-slate-700 hover:text-red-600 focus:outline-none cursor-pointer border border-slate-200 rounded-lg shrink-0">
@@ -92,25 +92,25 @@
     </div>
 
     <!-- TOP KPI SUMMARY STRIP -->
-    <div class="bg-slate-100/70 border-t border-slate-200 py-1.5 px-2 sm:px-4">
-      <div class="max-w-7xl mx-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-1.5 sm:gap-3 text-xs text-center">
-        <div class="bg-white p-1.5 rounded-lg border border-slate-200 shadow-2xs">
+    <div class="border-t py-1.5 px-2 sm:px-4" style="background: rgba(248,250,252,0.85); border-color: rgba(226,232,240,0.6);">
+      <div class="w-full grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-1.5 sm:gap-3 text-xs text-center">
+        <div class="rmc-kpi-card">
           <span class="text-slate-500 block mb-0.5 font-medium text-[10px]">Total Visits</span>
           <span id="kpi-total-visits" class="text-xs sm:text-base font-extrabold text-slate-800">0</span>
         </div>
-        <div class="bg-white p-1.5 rounded-lg border border-slate-200 shadow-2xs">
+        <div class="rmc-kpi-card">
           <span class="text-slate-500 block mb-0.5 font-medium text-[10px]">Total Leads</span>
-          <span id="kpi-total-leads" class="text-xs sm:text-base font-extrabold text-blue-600">0</span>
+          <span id="kpi-total-leads" class="text-xs sm:text-base font-extrabold" style="color:#4274D9;">0</span>
         </div>
-        <div class="bg-white p-1.5 rounded-lg border border-slate-200 shadow-2xs">
+        <div class="rmc-kpi-card">
           <span class="text-slate-500 block mb-0.5 font-medium text-[10px]">Conversion Rate</span>
           <span id="kpi-conversion-rate" class="text-xs sm:text-base font-extrabold text-emerald-600">0.0%</span>
         </div>
-        <div class="bg-white p-1.5 rounded-lg border border-slate-200 shadow-2xs">
+        <div class="rmc-kpi-card">
           <span class="text-slate-500 block mb-0.5 font-medium text-[10px]">Volume Sold</span>
           <span id="kpi-volume-sold" class="text-xs sm:text-base font-extrabold text-amber-600">0 m³</span>
         </div>
-        <div class="bg-white p-1.5 rounded-lg border border-slate-200 shadow-2xs col-span-2 sm:col-span-1">
+        <div class="rmc-kpi-card col-span-2 sm:col-span-1">
           <span class="text-slate-500 block mb-0.5 font-medium text-[10px]">Total Revenue</span>
           <span id="kpi-revenue" class="text-xs sm:text-base font-extrabold text-red-600">LKR 0</span>
         </div>
@@ -118,11 +118,11 @@
     </div>
   </header>
 
-  <!-- MAIN CONTAINER WITH SIDEBAR -->
-  <div class="flex-1 flex max-w-7xl w-full mx-auto safe-content-pb">
-    <!-- LEFT SIDEBAR NAVIGATION (DESKTOP) -->
-    <aside class="w-64 bg-white border-r border-slate-200 hidden md:block p-4">
-      <nav class="space-y-1">
+  <!-- MAIN CONTAINER WITH SIDEBAR — FIXED APP SHELL -->
+  <div class="flex-1 flex w-full safe-content-pb overflow-hidden">
+    <!-- LEFT SIDEBAR NAVIGATION (DESKTOP) — fixed-width, flex-shrink-0 -->
+    <aside class="w-56 xl:w-64 flex-shrink-0 hidden md:flex flex-col p-3 xl:p-4 overflow-y-auto" style="background: rgba(255,255,255,0.88); backdrop-filter: blur(8px); border-right: 1px solid rgba(226,232,240,0.7); min-height: calc(100vh - 100px);">
+      <nav class="space-y-0.5">
         <a href="#" data-view="dashboard" class="nav-link flex items-center px-3 py-2.5 text-sm font-semibold rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition bg-slate-100 text-red-600 border-l-4 border-red-600">
           <i class="fa-solid fa-chart-pie w-6 text-red-600"></i> Dashboard & Insights
         </a>
@@ -153,8 +153,8 @@
       </nav>
     </aside>
 
-    <!-- RIGHT CONTENT AREA -->
-    <main class="flex-1 p-3 sm:p-6 overflow-y-auto">
+    <!-- RIGHT CONTENT AREA — flex-1 fills all remaining horizontal space -->
+    <main class="flex-1 min-w-0 p-3 sm:p-5 overflow-y-auto">
       <!-- VIEW 1: DASHBOARD VIEW -->
       <section id="view-dashboard" class="view-panel space-y-6">
         <!-- AI Pipeline Optimization Insights Banner -->
