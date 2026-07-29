@@ -523,11 +523,11 @@ class Database {
   }
   deleteOpportunity(id) {
     const numericId = Number(id);
-    const index = this.data.opportunities.findIndex(o => o.id === numericId);
+    const index = this.data.opportunities.findIndex(o => Number(o.id) === numericId || String(o.id) === String(id));
     if (index >= 0) {
       const deleted = this.data.opportunities.splice(index, 1)[0];
-      this.data.quotations = this.data.quotations.filter(q => q.opportunity_id !== numericId);
-      this.data.orders = this.data.orders.filter(ord => ord.opportunity_id !== numericId);
+      this.data.quotations = (this.data.quotations || []).filter(q => Number(q.opportunity_id) !== numericId && String(q.opportunity_id) !== String(id));
+      this.data.orders = (this.data.orders || []).filter(ord => Number(ord.opportunity_id) !== numericId && String(ord.opportunity_id) !== String(id));
       this.saveNode('opportunities');
       this.saveNode('quotations');
       this.saveNode('orders');
@@ -536,7 +536,8 @@ class Database {
     return null;
   }
   deleteOpportunityByVisit(visitId) {
-    const oppIndex = this.data.opportunities.findIndex(o => o.visit_id === Number(visitId));
+    const numericId = Number(visitId);
+    const oppIndex = this.data.opportunities.findIndex(o => Number(o.visit_id) === numericId || String(o.visit_id) === String(visitId));
     if (oppIndex >= 0) {
       const opp = this.data.opportunities[oppIndex];
       this.deleteOpportunity(opp.id);

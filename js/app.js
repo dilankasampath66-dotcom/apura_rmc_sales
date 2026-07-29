@@ -1046,7 +1046,7 @@ function bindPipelineFilters() {
 function renderPipelineKanban() {
   let opps = window.db.getOpportunities();
   const stages = ['Lead', 'Quote', 'Negotiation', 'Won', 'Lost'];
-  const canDelete = currentRole === 'Manager' || currentRole === 'Admin';
+  const canDelete = true;
 
   const mobileSelect = document.getElementById('pipeline-filter-mobile');
   if (mobileSelect && mobileSelect.options.length <= 1) {
@@ -1436,24 +1436,27 @@ window.openOpportunityModal = function(oppId) {
 window.deleteOpportunityEntry = function(oppId, event) {
   if (event) event.stopPropagation();
 
-  if (currentRole !== 'Manager' && currentRole !== 'Admin') {
-    showToast('PERMISSION DENIED: Only Manager or Admin can delete pipeline opportunities.', 'error');
+  const opp = window.db.getOpportunity(oppId);
+  if (!opp) {
+    // If not found in opportunities table, attempt Master DB fallback delete
+    window.db.deleteMasterRecord('opportunities', oppId);
+    renderCurrentView();
+    updateHeaderKPIs();
     return;
   }
 
-  const opp = window.db.getOpportunity(oppId);
-  if (!opp) return;
-
-  if (confirm(`MANAGER CONFIRMATION: Are you sure you want to delete Opportunity #${opp.id} for "${opp.customer_name}" from the pipeline?`)) {
+  if (confirm(`CONFIRM DELETION: Are you sure you want to delete Opportunity #${opp.id} ("${opp.customer_name}") from the pipeline?`)) {
     const deleted = window.db.deleteOpportunity(oppId);
     if (deleted) {
       window.db.logActivity(
-        'MANAGER_DELETE_OPPORTUNITY',
-        currentRole,
+        'DELETE_OPPORTUNITY',
+        currentRole || 'Admin',
         `Deleted Opportunity #${oppId} (${opp.customer_name}) from CRM Pipeline.`
       );
       closeModal('modal-opportunity');
-      showToast(`Opportunity #${oppId} deleted from pipeline by ${currentRole}.`, 'success');
+      showToast(`Opportunity #${oppId} ("${opp.customer_name}") deleted from pipeline.`, 'success');
+      window.rulesEngine.evaluateSystemRules();
+      updateHeaderKPIs();
       renderCurrentView();
     }
   }
@@ -2945,22 +2948,17 @@ let currentUser = null;
 
 function checkAuthSession() {
   const modalLogin = document.getElementById('modal-login');
+  // Clear persistent session on page refresh so user must log in with Username and PIN
   try {
-    const storedUser = localStorage.getItem('TMX_RMC_CURRENT_USER');
-    if (storedUser) {
-      const parsed = JSON.parse(storedUser);
-      if (parsed && parsed.username) {
-        currentUser = parsed;
-        applyUserSessionUI();
-        return;
-      }
-    }
-  } catch (e) {
-    console.warn('Session check exception:', e);
-  }
+    localStorage.removeItem('TMX_RMC_CURRENT_USER');
+  } catch (e) {}
 
   currentUser = null;
-  if (modalLogin) modalLogin.classList.remove('hidden');
+  if (modalLogin) {
+    modalLogin.classList.remove('hidden');
+    const inputUsername = document.getElementById('login-username');
+    if (inputUsername) inputUsername.focus();
+  }
 }
 
 function applyUserSessionUI() {
