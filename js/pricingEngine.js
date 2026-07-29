@@ -53,11 +53,11 @@ class PricingEngine {
 
     const freeKm = (custRule && custRule.free_transport_km !== undefined) ? Number(custRule.free_transport_km) : (Number(config.free_transport_km) || 15);
     const truckMixerRatePerKm = (custRule && custRule.truck_mixer_rate_per_km_lkr !== undefined) ? Number(custRule.truck_mixer_rate_per_km_lkr) : (Number(config.truck_mixer_transport_rate_per_km_lkr) || 120);
-    const pumpCarRatePerKm = Number(config.pump_car_transport_rate_per_km_lkr) || 150;
+    const pumpCarRatePerKm = Number(config.pump_car_transport_rate_per_km_lkr) !== undefined ? Number(config.pump_car_transport_rate_per_km_lkr) : 550;
     
-    const pumpFlatFee = (custRule && custRule.pump_flat_fee_lkr !== undefined) ? Number(custRule.pump_flat_fee_lkr) : (Number(config.pump_flat_fee_lkr) || 15000);
-    const pumpBaseVol = Number(config.pump_base_volume_m3) || 50;
-    const pumpExtraRate = (custRule && custRule.pump_extra_rate_per_m3_lkr !== undefined) ? Number(custRule.pump_extra_rate_per_m3_lkr) : (Number(config.pump_extra_rate_per_m3_lkr) || 300);
+    const pumpFlatFee = (custRule && custRule.pump_flat_fee_lkr !== undefined) ? Number(custRule.pump_flat_fee_lkr) : (Number(config.pump_flat_fee_lkr) || 60000);
+    const pumpBaseVol = Number(config.pump_base_volume_m3) !== undefined ? Number(config.pump_base_volume_m3) : 30;
+    const pumpExtraRate = (custRule && custRule.pump_extra_rate_per_m3_lkr !== undefined) ? Number(custRule.pump_extra_rate_per_m3_lkr) : (Number(config.pump_extra_rate_per_m3_lkr) || 2000);
 
     const discountPerM3 = (custRule && custRule.discount_per_m3_lkr) ? Number(custRule.discount_per_m3_lkr) : 0;
     const rawBasePrice = this.getBasePrice(concreteGrade);
