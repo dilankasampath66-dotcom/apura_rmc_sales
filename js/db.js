@@ -557,35 +557,71 @@ class Database {
 
   // --- Concrete Grades ---
   getGrades() {
-    return this.data.concreteGrades || initialSeedData.concreteGrades;
+    if (!this.data.concreteGrades || !Array.isArray(this.data.concreteGrades)) {
+      if (this.data.concreteGrades && typeof this.data.concreteGrades === 'object') {
+        this.data.concreteGrades = Object.values(this.data.concreteGrades);
+      } else {
+        this.data.concreteGrades = JSON.parse(JSON.stringify(initialSeedData.concreteGrades || []));
+      }
+    }
+    return this.data.concreteGrades;
   }
-  getBasePriceForGrade(gradeName) {
-    const grades = this.getGrades();
-    const found = grades.find(g => g.grade_name.trim().toUpperCase() === String(gradeName).trim().toUpperCase());
-    return found ? Number(found.base_price_lkr) : 26000;
-  }
-  addGrade({ grade_name, base_price_lkr }) {
-    const cleanName = grade_name.trim().toUpperCase();
-    const cleanPrice = Number(base_price_lkr);
 
-    const existing = this.getGrades().find(g => g.grade_name === cleanName);
+  getBasePriceForGrade(gradeName) {
+    if (!gradeName) return 26000;
+    const raw = String(gradeName).trim().toUpperCase();
+    const clean = raw.split(' ')[0].replace(/[^A-Z0-9]/g, '');
+    const grades = this.getGrades();
+    const found = grades.find(g => g && g.grade_name && String(g.grade_name).trim().toUpperCase().replace(/[^A-Z0-9]/g, '') === clean);
+    if (found && found.base_price_lkr !== undefined) {
+      return Number(found.base_price_lkr);
+    }
+    if (clean === 'M20') return 24000;
+    if (clean === 'M25') return 26000;
+    if (clean === 'M30') return 28500;
+    return 26000;
+  }
+
+  addGrade({ grade_name, base_price_lkr }) {
+    if (!grade_name) return null;
+    const cleanName = String(grade_name).trim().toUpperCase();
+    const cleanPrice = Math.max(0, Number(base_price_lkr) || 0);
+
+    const grades = this.getGrades();
+    const existing = grades.find(g => g && g.grade_name && String(g.grade_name).trim().toUpperCase() === cleanName);
     if (existing) {
       existing.base_price_lkr = cleanPrice;
+      existing.grade_name = cleanName;
     } else {
-      this.data.concreteGrades.push({
+      grades.push({
         id: Date.now(),
         grade_name: cleanName,
         base_price_lkr: cleanPrice
       });
     }
+    this.data.concreteGrades = grades;
     this.saveNode('concreteGrades');
     return cleanName;
   }
+
+  updateGrade(id, patch) {
+    const numericId = Number(id);
+    const grades = this.getGrades();
+    const grade = grades.find(g => g && Number(g.id) === numericId);
+    if (grade) {
+      if (patch.grade_name) grade.grade_name = String(patch.grade_name).trim().toUpperCase();
+      if (patch.base_price_lkr !== undefined) grade.base_price_lkr = Math.max(0, Number(patch.base_price_lkr));
+      this.saveNode('concreteGrades');
+    }
+    return grade;
+  }
+
   deleteGrade(id) {
     const numericId = Number(id);
-    const index = this.data.concreteGrades.findIndex(g => g.id === numericId);
+    const grades = this.getGrades();
+    const index = grades.findIndex(g => g && Number(g.id) === numericId);
     if (index >= 0) {
-      const deleted = this.data.concreteGrades.splice(index, 1)[0];
+      const deleted = grades.splice(index, 1)[0];
       this.saveNode('concreteGrades');
       return deleted;
     }

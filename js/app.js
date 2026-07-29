@@ -475,7 +475,7 @@ function bindExcelExportButtons() {
 }
 
 /**
- * Dynamic Concrete Grade Dropdown Populator
+ * Dynamic Concrete Grade Dropdown Populator & Live Price Recall
  */
 function populateGradeDropdowns() {
   const grades = window.db.getGrades();
@@ -493,6 +493,33 @@ function populateGradeDropdowns() {
       }
     }
   });
+
+  updateVisitGradePriceBadge();
+}
+
+function updateVisitGradePriceBadge() {
+  const selectGrade = document.getElementById('visit-grade');
+  const inputVol = document.getElementById('visit-volume');
+  const inputDist = document.getElementById('visit-distance');
+
+  const elPrice = document.getElementById('visit-recalled-price');
+  const elTotal = document.getElementById('visit-recalled-total');
+  if (!selectGrade || !elPrice || !elTotal) return;
+
+  const gradeName = selectGrade.value || 'M20';
+  const basePrice = window.db.getBasePriceForGrade(gradeName);
+  const vol = Number(inputVol ? inputVol.value : 0) || 0;
+  const dist = Number(inputDist ? inputDist.value : 0) || 0;
+
+  const calc = window.pricingEngine.calculatePrice({
+    concreteGrade: gradeName,
+    distanceKm: dist,
+    pumpRequired: true,
+    volumeM3: vol
+  });
+
+  elPrice.textContent = `LKR ${basePrice.toLocaleString()}/m³`;
+  elTotal.textContent = `LKR ${(calc ? calc.totalValue : 0).toLocaleString()}`;
 }
 
 /**
@@ -524,7 +551,7 @@ function bindManagerGradeHandlers() {
         `Added/Updated Concrete Grade "${cleanGrade}" with Base Price LKR ${price.toLocaleString()}/m³.`
       );
 
-      showToast(`Concrete Grade "${cleanGrade}" updated (LKR ${price.toLocaleString()}/m³)!`, 'success');
+      showToast(`Concrete Grade "${cleanGrade}" saved with Base Price LKR ${price.toLocaleString()}/m³!`, 'success');
       formGrade.reset();
       populateGradeDropdowns();
       renderQuotationScreen();
@@ -1617,6 +1644,14 @@ window.deleteVisitEntry = function(visitId) {
 };
 
 function bindFormHandlers() {
+  const selectVisitGrade = document.getElementById('visit-grade');
+  const inputVisitVol = document.getElementById('visit-volume');
+  const inputVisitDist = document.getElementById('visit-distance');
+
+  if (selectVisitGrade) selectVisitGrade.addEventListener('change', updateVisitGradePriceBadge);
+  if (inputVisitVol) inputVisitVol.addEventListener('input', updateVisitGradePriceBadge);
+  if (inputVisitDist) inputVisitDist.addEventListener('input', updateVisitGradePriceBadge);
+
   const formVisit = document.getElementById('form-add-visit');
   if (formVisit) {
     formVisit.addEventListener('submit', (e) => {
@@ -1757,7 +1792,10 @@ function renderGradesManagerList() {
         <span class="text-slate-900 font-bold">${g.grade_name}</span>
         <span class="text-emerald-700 font-mono">LKR ${g.base_price_lkr.toLocaleString()}/m³</span>
         ${canManage ? `
-          <button onclick="deleteConcreteGradeEntry(${g.id})" title="Delete Grade" class="text-slate-400 hover:text-red-600 transition ml-1 cursor-pointer">
+          <button onclick="editConcreteGradeEntry(${g.id})" title="Edit Grade & Price" class="text-blue-600 hover:text-blue-800 transition ml-1 cursor-pointer font-bold text-xs">
+            <i class="fa-solid fa-pen-to-square"></i>
+          </button>
+          <button onclick="deleteConcreteGradeEntry(${g.id})" title="Delete Grade" class="text-slate-400 hover:text-red-600 transition ml-1 cursor-pointer font-bold">
             &times;
           </button>
         ` : ''}
@@ -1765,6 +1803,19 @@ function renderGradesManagerList() {
     `).join('');
   }
 }
+
+window.editConcreteGradeEntry = function(id) {
+  const grades = window.db.getGrades();
+  const grade = grades.find(g => Number(g.id) === Number(id));
+  if (!grade) return;
+
+  const nameInput = document.getElementById('grade-name-input');
+  const priceInput = document.getElementById('grade-price-input');
+  if (nameInput) nameInput.value = grade.grade_name;
+  if (priceInput) priceInput.value = grade.base_price_lkr;
+
+  showToast(`Editing Grade "${grade.grade_name}". Update price and click "+ Add / Update Grade".`, 'info');
+};
 
 window.renderCustomerPricingRulesList = function() {
   const rules = window.db.getCustomerPricingRules();
