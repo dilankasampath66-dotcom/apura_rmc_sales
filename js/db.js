@@ -1303,6 +1303,14 @@ class Database {
 
 try {
   window.db = new Database();
+  // Global method aliases for maximum script-to-script resilience
+  window.getGrades = (g) => window.db.getGrades(g);
+  window.addGrade = (g) => window.db.addGrade(g);
+  window.getVisits = () => window.db.getVisits();
+  window.addVisit = (v) => window.db.addVisit(v);
+  window.getUsers = () => window.db.getUsers();
+  window.addUser = (u) => window.db.addUser(u);
+  window.authenticateUser = (u, p) => window.db.authenticateUser(u, p);
 } catch (e) {
   console.error("Database initialization exception caught:", e);
   try {
