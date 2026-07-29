@@ -1,0 +1,378 @@
+/* Tokyo Cement Co. (Lanka) PLC - Official Website Palette & Design Tokens */
+:root {
+  --tokyo-red: #E31E24;
+  --tokyo-red-dark: #C1121F;
+  --tokyo-navy: #0F172A;
+  --tokyo-slate: #1E293B;
+  --tokyo-gold: #F59E0B;
+  --tokyo-gray-bg: #FAFAFA;
+  --tokyo-card-bg: #FFFFFF;
+  --tokyo-border: #E2E8F0;
+
+  --color-lead: #2563EB;
+  --color-quote: #D97706;
+  --color-negotiation: #7C3AED;
+  --color-won: #059669;
+  --color-lost: #E31E24;
+
+  --excel-green: #107C41;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: var(--tokyo-gray-bg);
+  color: #0F172A;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  overflow-x: hidden;
+  touch-action: manipulation;
+}
+
+/* Custom Minimalist Scrollbars */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Tokyo Cement Official Brand Badge & Logo Glow */
+.tokyo-brand-badge {
+  background: linear-gradient(135deg, #E31E24 0%, #B91C1C 100%);
+  color: #FFFFFF;
+  box-shadow: 0 4px 10px rgba(227, 30, 36, 0.25);
+  transition: all 0.3s ease;
+}
+
+.tokyo-brand-badge:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(227, 30, 36, 0.35);
+}
+
+/* Header Animated Shimmer Strip */
+.tokyo-shimmer-strip {
+  background: linear-gradient(90deg, #1E293B 0%, #0F172A 50%, #1E293B 100%);
+}
+
+/* Stage Badge Classes - Light Minimalist */
+.badge-lead {
+  background-color: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+.badge-quote {
+  background-color: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+.badge-negotiation {
+  background-color: #f5f3ff;
+  color: #6d28d9;
+  border: 1px solid #ddd6fe;
+}
+.badge-won {
+  background-color: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+.badge-lost {
+  background-color: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+/* Kanban Board Column Headers */
+.kanban-col-lead { border-top: 4px solid var(--color-lead); }
+.kanban-col-quote { border-top: 4px solid var(--color-quote); }
+.kanban-col-negotiation { border-top: 4px solid var(--color-negotiation); }
+.kanban-col-won { border-top: 4px solid var(--color-won); }
+.kanban-col-lost { border-top: 4px solid var(--color-lost); }
+
+.kanban-header-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: rgba(241, 245, 249, 0.95);
+  backdrop-filter: blur(4px);
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+/* Custom Sleek Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Drag and Drop Visual Indicators */
+.kanban-column {
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+  max-height: calc(100vh - 210px);
+  min-height: 520px;
+}
+
+.kanban-column.drag-over {
+  background-color: #f1f5f9 !important;
+  border-color: #3b82f6 !important;
+  box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.3);
+}
+
+.kanban-card.dragging {
+  opacity: 0.4;
+  transform: scale(0.98);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+}
+
+.kanban-card {
+  cursor: grab;
+  user-select: none;
+}
+
+.kanban-card:active {
+  cursor: grabbing;
+}
+
+/* Tokyo Cement Glass Cards */
+.glass-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+}
+
+.glass-card-hover {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-card-hover:hover {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+}
+
+/* Excel Export Button Styling */
+.btn-excel {
+  background-color: #107c41;
+  color: #ffffff;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(16, 124, 65, 0.15);
+}
+
+.btn-excel:hover {
+  background-color: #0e6b37;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(16, 124, 65, 0.25);
+}
+
+.btn-excel-sm {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.75rem;
+}
+
+/* Master Database Download & Thermal Print Buttons */
+.btn-db-download {
+  background-color: #0f172a;
+  color: #ffffff;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+  border: 1px solid #334155;
+}
+
+.btn-db-download:hover {
+  background-color: #1e293b;
+  border-color: #475569;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.2);
+}
+
+.btn-thermal-print {
+  background-color: #1a202c;
+  color: #ffffff;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.6rem 1rem;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.btn-thermal-print:hover {
+  background-color: #2d3748;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+/* Pulse animation for AI recommendations */
+@keyframes pulse-border-light {
+  0% { box-shadow: 0 0 0 0 rgba(227, 30, 36, 0.25); }
+  70% { box-shadow: 0 0 0 10px rgba(227, 30, 36, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(227, 30, 36, 0); }
+}
+
+.ai-pulse {
+  animation: pulse-border-light 2.5s infinite;
+}
+
+/* Timeframe Selector Pills */
+.timeframe-pill {
+  padding: 0.35rem 0.85rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: 1px solid #e2e8f0;
+  background-color: #ffffff;
+  color: #64748b;
+}
+
+.timeframe-pill.active {
+  background-color: #E31E24;
+  color: #ffffff;
+  border-color: #E31E24;
+  box-shadow: 0 2px 6px rgba(227, 30, 36, 0.3);
+}
+
+/* THERMAL PRINTER RECEIPT STYLING (80mm MONOCHROME MINIMALIST) */
+.thermal-receipt-paper {
+  width: 320px;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 16px 12px;
+  background-color: #ffffff;
+  color: #000000;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 11px;
+  line-height: 1.35;
+  border: 1px dashed #475569;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.thermal-receipt-paper .divider {
+  border-top: 1px dashed #000000;
+  margin: 8px 0;
+}
+
+.thermal-receipt-paper .divider-double {
+  border-top: 2px solid #000000;
+  margin: 8px 0;
+}
+
+/* PRINT MEDIA OVERRIDES FOR 80mm THERMAL PRINTERS */
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+  #thermal-print-area, #thermal-print-area * {
+    visibility: visible !important;
+  }
+  #thermal-print-area {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 80mm !important;
+    margin: 0 !important;
+    padding: 2mm !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  .thermal-receipt-paper {
+    width: 100% !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+  @page {
+    size: 80mm auto;
+    margin: 0;
+  }
+}
+
+/* MOBILE RESPONSIVE SPECIFIC OVERRIDES FOR IPHONE 15 & REDMI C13 */
+@media (max-width: 767px) {
+  body {
+    padding-bottom: 4rem;
+  }
+
+  main {
+    padding-bottom: 5rem !important;
+  }
+
+  input, select, textarea, button {
+    min-height: 44px;
+    font-size: 14px !important;
+  }
+
+  .btn-excel-sm, .btn-db-download {
+    min-height: 36px;
+    font-size: 12px !important;
+  }
+
+  .kanban-mobile-swipe {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    gap: 0.75rem;
+    padding-bottom: 1rem;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .kanban-column {
+    scroll-snap-align: center;
+    min-width: 82vw;
+    max-width: 85vw;
+    flex-shrink: 0;
+  }
+
+  #toast-container {
+    bottom: 5rem;
+    right: 0.75rem;
+    left: 0.75rem;
+    width: calc(100% - 1.5rem);
+  }
+}
+
+/* Toast animations */
+.toast-msg {
+  animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideIn {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}

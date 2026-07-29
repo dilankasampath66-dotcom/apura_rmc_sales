@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>RMC Regional Plant - Sales & Cost Estimator</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- SheetJS CDN (Excel Export) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- html2pdf.js CDN (Direct Thermal PDF Export) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <!-- Firebase Cloud Realtime Database SDK (v10 Compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="css/styles.css">
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body class="bg-slate-50 text-slate-800 flex flex-col min-h-screen">
+
+  <!-- TOP HEADER & ROLE SWITCHER -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
+    <div class="max-w-7xl mx-auto px-3 sm:px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 sm:gap-4">
+      <div class="flex items-center space-x-2.5">
+        <!-- Mobile Menu Toggle Hamburger (Visible on Mobile) -->
+        <button id="btn-mobile-menu" onclick="toggleMobileNavDrawer()" class="md:hidden p-1.5 text-slate-700 hover:text-red-600 focus:outline-none cursor-pointer border border-slate-200 rounded-lg shrink-0">
+          <i class="fa-solid fa-bars text-base"></i>
+        </button>
+
+        <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-lg tokyo-brand-badge flex items-center justify-center text-white font-black text-lg sm:text-xl shadow-md shrink-0">
+          RM
+        </div>
+        <div>
+          <h1 class="text-sm sm:text-lg font-extrabold text-slate-900 leading-tight tracking-tight">
+            REGIONAL PLANT <span class="text-red-600 font-normal">RMC</span>
+          </h1>
+          <p class="text-[10px] sm:text-xs text-slate-500 font-medium">Ready Mix Concrete Sales & Delivery Estimator</p>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center space-x-2 sm:space-x-2.5 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100">
+        <!-- FIREBASE CLOUD SYNC BADGE & CONFIG TRIGGER -->
+        <button id="btn-firebase-config" onclick="openFirebaseConfigModal()" class="flex items-center space-x-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 py-1.5 px-2.5 rounded-lg border border-slate-300 text-xs transition cursor-pointer" title="Firebase Cloud Database Connection Settings">
+          <i id="firebase-sync-icon" class="fa-solid fa-cloud text-amber-500"></i>
+          <span id="firebase-sync-status" class="font-semibold text-xs">Cloud Sync</span>
+        </button>
+
+        <!-- DOWNLOAD MASTER DATABASE BUTTON (JSON) -->
+        <button id="btn-download-master-db" class="btn-db-download text-xs cursor-pointer py-1.5 px-2.5" title="Download Complete Master Database JSON Backup">
+          <i class="fa-solid fa-database text-amber-400 text-xs"></i>
+          <span class="text-xs">Download Master DB</span>
+        </button>
+
+        <!-- IMPORT MASTER DATABASE FILE TRIGGER -->
+        <input type="file" id="input-import-db" accept=".json" class="hidden" />
+        <button id="btn-trigger-import-db" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-1.5 px-2.5 rounded-lg border border-slate-300 text-xs transition cursor-pointer" title="Restore Master Database from Backup JSON">
+          <i class="fa-solid fa-file-import text-slate-500 mr-1"></i>
+          <span class="text-xs">Restore DB</span>
+        </button>
+
+        <!-- GLOBAL EXCEL EXPORT BUTTON -->
+        <button id="btn-export-full-excel" class="btn-excel text-xs cursor-pointer py-1.5 px-2.5">
+          <i class="fa-solid fa-file-excel text-white text-xs"></i>
+          <span class="text-xs">Excel Report</span>
+        </button>
+
+        <!-- Logged In User Profile & Logout -->
+        <div id="user-header-profile" class="flex items-center space-x-2 bg-slate-100 p-1 px-2.5 rounded-lg border border-slate-200">
+          <div class="w-6 h-6 rounded-full bg-red-600 text-white font-bold text-[11px] flex items-center justify-center shadow-xs" id="user-avatar-initials">
+            A
+          </div>
+          <div class="text-left leading-tight hidden sm:block">
+            <div id="user-display-name" class="text-xs font-bold text-slate-800">System Admin</div>
+            <div id="user-display-role" class="text-[10px] text-red-600 font-semibold">Admin</div>
+          </div>
+          <span id="active-role-badge" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700 border border-red-300">
+            ADMIN
+          </span>
+          <button id="btn-logout" onclick="logoutUser()" title="Sign Out of ERP System" class="bg-white hover:bg-red-50 text-slate-600 hover:text-red-600 border border-slate-300 p-1 px-2 rounded text-[11px] font-bold transition cursor-pointer ml-1">
+            <i class="fa-solid fa-right-from-bracket text-red-600"></i> <span class="hidden sm:inline">Logout</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOP KPI SUMMARY STRIP -->
+    <div class="bg-slate-100/70 border-t border-slate-200 py-2 px-3 sm:px-4">
+      <div class="max-w-7xl mx-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 sm:gap-3 text-xs text-center">
+        <div class="bg-white p-1.5 sm:p-2 rounded border border-slate-200 shadow-2xs">
+          <span class="text-slate-500 block mb-0.5 font-medium text-[10px] sm:text-xs">Total Visits</span>
+          <span id="kpi-total-visits" class="text-sm sm:text-base font-extrabold text-slate-800">0</span>
+        </div>
+        <div class="bg-white p-1.5 sm:p-2 rounded border border-slate-200 shadow-2xs">
+          <span class="text-slate-500 block mb-0.5 font-medium text-[10px] sm:text-xs">Total Leads</span>
+          <span id="kpi-total-leads" class="text-sm sm:text-base font-extrabold text-blue-600">0</span>
+        </div>
+        <div class="bg-white p-1.5 sm:p-2 rounded border border-slate-200 shadow-2xs">
+          <span class="text-slate-500 block mb-0.5 font-medium text-[10px] sm:text-xs">Conversion Rate</span>
+          <span id="kpi-conversion-rate" class="text-sm sm:text-base font-extrabold text-emerald-600">0.0%</span>
+        </div>
+        <div class="bg-white p-1.5 sm:p-2 rounded border border-slate-200 shadow-2xs">
+          <span class="text-slate-500 block mb-0.5 font-medium text-[10px] sm:text-xs">Volume Sold</span>
+          <span id="kpi-volume-sold" class="text-sm sm:text-base font-extrabold text-amber-600">0 m³</span>
+        </div>
+        <div class="bg-white p-1.5 sm:p-2 rounded border border-slate-200 shadow-2xs col-span-2 sm:col-span-1">
+          <span class="text-slate-500 block mb-0.5 font-medium text-[10px] sm:text-xs">Total Revenue</span>
+          <span id="kpi-revenue" class="text-sm sm:text-base font-extrabold text-red-600">LKR 0</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER WITH SIDEBAR -->
+  <div class="flex-1 flex max-w-7xl w-full mx-auto">
+    <!-- LEFT SIDEBAR NAVIGATION (DESKTOP) -->
+    <aside class="w-64 bg-white border-r border-slate-200 hidden md:block p-4">
+      <nav class="space-y-1">
+        <a href="#" data-view="dashboard" class="nav-link flex items-center px-3 py-2.5 text-sm font-semibold rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition bg-slate-100 text-red-600 border-l-4 border-red-600">
+          <i class="fa-solid fa-chart-pie w-6 text-red-600"></i> Dashboard & Insights
+        </a>
+        <a href="#" data-view="visits" class="nav-link flex items-center px-3 py-2.5 text-sm font-semibold rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition">
+          <i class="fa-solid fa-clipboard-user w-6 text-slate-500"></i> Sales Visits
+        </a>
+        <a href="#" data-view="pipeline" class="nav-link flex items-center px-3 py-2.5 text-sm font-semibold rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition">
+          <i class="fa-solid fa-kanban w-6 text-purple-600"></i> CRM Pipeline
+        </a>
+        <a href="#" data-view="quotation" class="nav-link flex items-center px-3 py-2.5 text-sm font-semibold rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition">
+          <i class="fa-solid fa-calculator w-6 text-amber-600"></i> Pricing & Rules
+        </a>
+        <a href="#" data-view="orders" class="nav-link flex items-center px-3 py-2.5 text-sm font-semibold rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition">
+          <i class="fa-solid fa-truck-ramp-box w-6 text-emerald-600"></i> Orders & Delivery
+        </a>
+        <a href="#" data-view="activity" class="nav-link flex items-center px-3 py-2.5 text-sm font-semibold rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition">
+          <i class="fa-solid fa-list-check w-6 text-slate-500"></i> Activity Audit Log
+        </a>
+        <a href="#" id="nav-users" data-view="users" class="nav-link flex items-center px-3 py-2.5 text-sm font-semibold rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition">
+          <i class="fa-solid fa-users-gear w-6 text-blue-600"></i> User Management
+        </a>
+        <a href="#" id="nav-master-db" data-view="master-db" class="nav-link flex items-center px-3 py-2.5 text-sm font-semibold rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition">
+          <i class="fa-solid fa-database w-6 text-amber-500"></i> Master Database
+        </a>
+        <a href="#" id="nav-auto-qa" data-view="auto-qa" class="nav-link flex items-center px-3 py-2.5 text-sm font-semibold rounded-lg text-slate-700 hover:bg-red-50 hover:text-red-600 transition mt-4 border border-red-200 bg-red-50/50">
+          <i class="fa-solid fa-vial w-6 text-red-600"></i> Auto QA Test Suite
+        </a>
+      </nav>
+    </aside>
+
+    <!-- CONTENT VIEW PANELS -->
+    <main class="flex-1 p-3 sm:p-6 overflow-y-auto">
+
+      <!-- VIEW 1: DASHBOARD -->
+      <section id="view-dashboard" class="view-panel space-y-4">
+        <!-- SALES PERFORMANCE ANALYZER TIMEFRAME SWITCHER -->
+        <div class="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-xl border border-slate-200 shadow-2xs">
+          <div class="flex items-center space-x-2">
+            <i class="fa-solid fa-chart-line text-red-600 text-sm"></i>
+            <span class="text-xs font-bold text-slate-900">Sales Performance Period Analysis:</span>
+          </div>
+          <div class="flex flex-wrap items-center gap-1.5" id="timeframe-selector-container">
+            <button data-timeframe="all" class="timeframe-pill active">All Time</button>
+            <button data-timeframe="weekly" class="timeframe-pill">Weekly (7 Days)</button>
+            <button data-timeframe="monthly" class="timeframe-pill">Monthly (30 Days)</button>
+            <button data-timeframe="yearly" class="timeframe-pill">Yearly (365 Days)</button>
+          </div>
+        </div>
+
+        <!-- AI Insights Banner Container -->
+        <div id="dashboard-ai-insights"></div>
+
+        <!-- CHARTS GRID -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="glass-card p-4 sm:p-5">
+            <h3 class="text-sm font-bold text-slate-800 mb-4 flex items-center">
+              <i class="fa-solid fa-chart-doughnut text-red-600 mr-2"></i> CRM Pipeline Stage Breakdown
+            </h3>
+            <div class="h-64 flex justify-center">
+              <canvas id="chart-stage-breakdown"></canvas>
+            </div>
+          </div>
+          <div class="glass-card p-4 sm:p-5">
+            <h3 class="text-sm font-bold text-slate-800 mb-4 flex items-center">
+              <i class="fa-solid fa-layer-group text-blue-600 mr-2"></i> Demand Volume by Concrete Grade (m³)
+            </h3>
+            <div class="h-64 flex justify-center">
+              <canvas id="chart-grade-volume"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- SALESPERSON LEADERBOARD -->
+        <div class="glass-card p-4 sm:p-5">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-sm font-bold text-slate-800 flex items-center">
+              <i class="fa-solid fa-trophy text-amber-500 mr-2"></i> Sales Officer Leaderboard (<span id="leaderboard-period-label">All Time</span>)
+            </h3>
+            <button onclick="window.excelExporter.exportFullSystemReport()" class="btn-excel btn-excel-sm cursor-pointer">
+              <i class="fa-solid fa-file-excel"></i> Export All
+            </button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider bg-slate-50">
+                  <th class="py-2.5 px-3">Rank</th>
+                  <th class="py-2.5 px-3">Sales Officer</th>
+                  <th class="py-2.5 px-3">Leads</th>
+                  <th class="py-2.5 px-3">Won</th>
+                  <th class="py-2.5 px-3">Volume</th>
+                  <th class="py-2.5 px-3 text-right">Revenue (LKR)</th>
+                </tr>
+              </thead>
+              <tbody id="table-leaderboard-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 2: SALES VISITS -->
+      <section id="view-visits" class="view-panel hidden space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Add Visit Form -->
+          <div class="glass-card p-4 sm:p-5 lg:col-span-1">
+            <h3 class="text-sm font-bold text-slate-900 mb-4 flex items-center">
+              <i class="fa-solid fa-plus-circle text-red-600 mr-2"></i> STEP 1: Add Site Visit
+            </h3>
+            <form id="form-add-visit" class="space-y-3 text-xs">
+              <div>
+                <label class="block text-slate-700 font-semibold mb-1">Visit Date *</label>
+                <input type="date" id="visit-date" required class="w-full bg-white border border-slate-300 rounded p-2 text-slate-800 focus:border-red-600" />
+              </div>
+              <div>
+                <label class="block text-slate-700 font-semibold mb-1">Sales Officer *</label>
+                <input type="text" id="visit-officer" placeholder="e.g. Sunil Perera" required class="w-full bg-white border border-slate-300 rounded p-2 text-slate-800 focus:border-red-600" />
+              </div>
+              <div>
+                <label class="block text-slate-700 font-semibold mb-1">Customer Name *</label>
+                <input type="text" id="visit-customer" placeholder="e.g. Access Engineering" required class="w-full bg-white border border-slate-300 rounded p-2 text-slate-800 focus:border-red-600" />
+              </div>
+              <div>
+                <label class="block text-slate-700 font-semibold mb-1">Project Location *</label>
+                <input type="text" id="visit-location" placeholder="e.g. Plant Site / Region" required class="w-full bg-white border border-slate-300 rounded p-2 text-slate-800 focus:border-red-600" />
+              </div>
+              <div>
+                <label class="block text-slate-700 font-semibold mb-1">Contact Phone (10 Digits) *</label>
+                <input type="text" id="visit-contact" maxlength="10" placeholder="0771234567" required pattern="\d{10}" class="w-full bg-white border border-slate-300 rounded p-2 text-slate-800 font-mono focus:border-red-600" />
+                <span class="text-[10px] text-slate-500 block mt-0.5">Must be 10 numeric digits (e.g., 0771234567)</span>
+              </div>
+              
+              <!-- Concrete Grade Selection (Picked by Sales Officer) -->
+              <div>
+                <label class="block text-slate-700 font-semibold mb-1">Concrete Grade Picked *</label>
+                <select id="visit-grade" required class="w-full bg-white border border-slate-300 rounded p-2 text-slate-800 font-semibold focus:border-red-600">
+                  <!-- Dynamically populated -->
+                </select>
+              </div>
+
+              <div class="grid grid-cols-3 gap-2">
+                <div>
+                  <label class="block text-slate-700 font-semibold mb-1">Customer Type</label>
+                  <select id="visit-type" class="w-full bg-white border border-slate-300 rounded p-2 text-slate-800">
+                    <option value="Commercial">Commercial</option>
+                    <option value="Infrastructure">Infrastructure</option>
+                    <option value="Residential">Residential</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-slate-700 font-semibold mb-1">Site Distance (KM) *</label>
+                  <input type="number" id="visit-distance" value="10" min="0" placeholder="e.g. 15" required class="w-full bg-white border border-slate-300 rounded p-2 text-slate-800 focus:border-red-600" />
+                </div>
+                <div>
+                  <label class="block text-slate-700 font-semibold mb-1">Est. Volume (m³) *</label>
+                  <input type="number" id="visit-volume" min="1" placeholder="e.g. 200" required class="w-full bg-white border border-slate-300 rounded p-2 text-slate-800" />
+                </div>
+              </div>
+              <div>
+                <label class="block text-slate-700 font-semibold mb-1">Site Visit Notes</label>
+                <textarea id="visit-notes" rows="2" placeholder="Foundation details, access road..." class="w-full bg-white border border-slate-300 rounded p-2 text-slate-800"></textarea>
+              </div>
+              <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded text-xs transition shadow-md shadow-red-600/20 cursor-pointer">
+                Submit Visit & Auto-Create Lead
+              </button>
+            </form>
+          </div>
+
+          <!-- Visits Table -->
+          <div class="glass-card p-4 sm:p-5 lg:col-span-2">
+            <div class="flex justify-between items-center mb-4">
+              <div>
+                <h3 class="text-sm font-bold text-slate-900">Recorded Sales Visits</h3>
+                <p class="text-[11px] text-slate-500">Managers & Admins can delete wrong entries.</p>
+              </div>
+              <button onclick="window.excelExporter.exportTableToExcel('visits')" class="btn-excel btn-excel-sm cursor-pointer">
+                <i class="fa-solid fa-file-excel"></i> Export
+              </button>
+            </div>
+            <div class="overflow-x-auto max-h-[calc(100vh-250px)] min-h-[420px] overflow-y-auto custom-scrollbar border border-slate-200 rounded-lg">
+              <table class="w-full text-left border-collapse">
+                <thead class="bg-slate-100 sticky top-0 z-10 backdrop-blur-xs shadow-2xs">
+                  <tr class="border-b border-slate-200 text-xs font-semibold text-slate-600 uppercase">
+                    <th class="py-2.5 px-3">ID</th>
+                    <th class="py-2.5 px-3">Date</th>
+                    <th class="py-2.5 px-3">Customer</th>
+                    <th class="py-2.5 px-3">Grade</th>
+                    <th class="py-2.5 px-3">Officer</th>
+                    <th class="py-2.5 px-3">Volume</th>
+                    <th class="py-2.5 px-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="table-visits-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 3: REDESIGNED CRM PIPELINE -->
+      <section id="view-pipeline" class="view-panel hidden space-y-4">
+        <!-- PIPELINE CONTROL BAR: Search, Filter, Sort & Export -->
+        <div class="glass-card p-3 flex flex-wrap items-center justify-between gap-2.5">
+          <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto flex-1">
+            <!-- Search -->
+            <div class="relative w-full sm:w-auto sm:min-w-[200px] flex-1">
+              <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-xs"></i>
+              <input type="text" id="pipeline-search-input" placeholder="Search customer, 10-digit mobile, officer..." class="w-full bg-slate-50 border border-slate-300 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-red-600 font-medium" />
+            </div>
+
+            <!-- Filter by Customer Mobile (Primary Key) -->
+            <select id="pipeline-filter-mobile" class="bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:border-red-600 font-semibold">
+              <option value="">📱 All Mobile Keys</option>
+            </select>
+
+            <!-- Filter by Officer -->
+            <select id="pipeline-filter-officer" class="bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:border-red-600">
+              <option value="">All Officers</option>
+            </select>
+
+            <!-- Filter & Sort Options -->
+            <select id="pipeline-sort-by" class="bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:border-red-600 font-medium">
+              <option value="newest">📅 Latest First (Newest - Oldest)</option>
+              <option value="oldest">⌛ Oldest First (Oldest - Newest)</option>
+              <option value="date_modified">🔄 Recently Updated (Date Modified)</option>
+              <option value="name_asc">🔤 Customer Name (A - Z)</option>
+              <option value="name_desc">🔤 Customer Name (Z - A)</option>
+              <option value="value_high">💵 Value: High to Low</option>
+              <option value="value_low">💵 Value: Low to High</option>
+              <option value="prob_high">🎯 Win Probability: High to Low</option>
+              <option value="volume_high">📦 Volume: High to Low</option>
+            </select>
+          </div>
+
+          <div class="flex items-center justify-between w-full sm:w-auto space-x-2">
+            <span class="text-[11px] text-slate-500 font-medium md:hidden"><i class="fa-solid fa-arrows-left-right text-red-600 mr-1"></i> Swipe columns</span>
+            <button onclick="window.excelExporter.exportTableToExcel('pipeline')" class="btn-excel btn-excel-sm cursor-pointer">
+              <i class="fa-solid fa-file-excel"></i> Export Excel
+            </button>
+          </div>
+        </div>
+
+        <!-- MOBILE TOUCH SWIPEABLE & DESKTOP 5-COL GRID KANBAN -->
+        <div class="kanban-mobile-swipe md:grid md:grid-cols-5 gap-3 md:gap-4">
+          <!-- Col 1: Lead -->
+          <div id="col-container-lead" class="kanban-column bg-slate-100/90 p-3 rounded-xl border border-slate-200 kanban-col-lead flex flex-col"
+               ondragover="handleDragOver(event)" ondragenter="handleDragEnter(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'Lead')">
+            <div class="kanban-header-sticky">
+              <div class="flex justify-between items-center mb-1">
+                <span class="font-extrabold text-xs text-blue-700 tracking-wide">1. LEAD</span>
+                <span id="count-lead" class="text-xs bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded-full border border-blue-200">0</span>
+              </div>
+              <div class="flex justify-between items-center text-[10px] text-slate-500 font-semibold">
+                <span id="vol-lead">0 m³</span>
+                <span id="val-lead" class="text-blue-700">LKR 0</span>
+              </div>
+            </div>
+            <div id="kanban-col-lead" class="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar"></div>
+          </div>
+
+          <!-- Col 2: Quote -->
+          <div id="col-container-quote" class="kanban-column bg-slate-100/90 p-3 rounded-xl border border-slate-200 kanban-col-quote flex flex-col"
+               ondragover="handleDragOver(event)" ondragenter="handleDragEnter(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'Quote')">
+            <div class="kanban-header-sticky">
+              <div class="flex justify-between items-center mb-1">
+                <span class="font-extrabold text-xs text-amber-700 tracking-wide">2. QUOTE</span>
+                <span id="count-quote" class="text-xs bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full border border-amber-200">0</span>
+              </div>
+              <div class="flex justify-between items-center text-[10px] text-slate-500 font-semibold">
+                <span id="vol-quote">0 m³</span>
+                <span id="val-quote" class="text-amber-700">LKR 0</span>
+              </div>
+            </div>
+            <div id="kanban-col-quote" class="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar"></div>
+          </div>
+
+          <!-- Col 3: Negotiation -->
+          <div id="col-container-negotiation" class="kanban-column bg-slate-100/90 p-3 rounded-xl border border-slate-200 kanban-col-negotiation flex flex-col"
+               ondragover="handleDragOver(event)" ondragenter="handleDragEnter(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'Negotiation')">
+            <div class="kanban-header-sticky">
+              <div class="flex justify-between items-center mb-1">
+                <span class="font-extrabold text-xs text-purple-700 tracking-wide">3. NEGOTIATION</span>
+                <span id="count-negotiation" class="text-xs bg-purple-100 text-purple-800 font-bold px-2 py-0.5 rounded-full border border-purple-200">0</span>
+              </div>
+              <div class="flex justify-between items-center text-[10px] text-slate-500 font-semibold">
+                <span id="vol-negotiation">0 m³</span>
+                <span id="val-negotiation" class="text-purple-700">LKR 0</span>
+              </div>
+            </div>
+            <div id="kanban-col-negotiation" class="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar"></div>
+          </div>
+
+          <!-- Col 4: Won -->
+          <div id="col-container-won" class="kanban-column bg-slate-100/90 p-3 rounded-xl border border-slate-200 kanban-col-won flex flex-col"
+               ondragover="handleDragOver(event)" ondragenter="handleDragEnter(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'Won')">
+            <div class="kanban-header-sticky">
+              <div class="flex justify-between items-center mb-1">
+                <span class="font-extrabold text-xs text-emerald-700 tracking-wide">4. WON</span>
+                <span id="count-won" class="text-xs bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full border border-emerald-200">0</span>
+              </div>
+              <div class="flex justify-between items-center text-[10px] text-slate-500 font-semibold">
+                <span id="vol-won">0 m³</span>
+                <span id="val-won" class="text-emerald-700">LKR 0</span>
+              </div>
+            </div>
+            <div id="kanban-col-won" class="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar"></div>
+          </div>
+
+          <!-- Col 5: Lost -->
+          <div id="col-container-lost" class="kanban-column bg-slate-100/90 p-3 rounded-xl border border-slate-200 kanban-col-lost flex flex-col"
+               ondragover="handleDragOver(event)" ondragenter="handleDragEnter(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'Lost')">
+            <div class="kanban-header-sticky">
+              <div class="flex justify-between items-center mb-1">
+                <span class="font-extrabold text-xs text-red-700 tracking-wide">5. LOST</span>
+                <span id="count-lost" class="text-xs bg-red-100 text-red-800 font-bold px-2 py-0.5 rounded-full border border-red-200">0</span>
+              </div>
+              <div class="flex justify-between items-center text-[10px] text-slate-500 font-semibold">
+                <span id="vol-lost">0 m³</span>
+                <span id="val-lost" class="text-red-700">LKR 0</span>
+              </div>
+            </div>
+            <div id="kanban-col-lost" class="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 4: PRICING ENGINE & MANAGER CONFIGURATIONS -->
+      <section id="view-quotation" class="view-panel hidden space-y-6">
+        <!-- MANAGER PRICING & RULES CONFIGURATION CARD -->
+        <div id="manager-grade-card" class="glass-card p-4 sm:p-5 border-red-200 bg-gradient-to-r from-red-50/60 to-white space-y-4">
+          <div class="flex justify-between items-center border-b border-red-100 pb-3">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900 flex items-center">
+                <i class="fa-solid fa-sliders text-red-600 mr-2"></i> Manager Rates, Transport & Pumping Rules Configuration
+              </h3>
+              <p class="text-xs text-slate-500">Configure truck mixer transport rates, pump car transport rates, flat rates, and extra volume pumping charges.</p>
+            </div>
+            <span class="text-[11px] font-bold px-2 py-0.5 rounded bg-red-100 text-red-700 border border-red-200">MANAGER / ADMIN</span>
+          </div>
+
+          <!-- Section 1: Edit Dual Transport Rates, Pump Car Charges & Validity -->
+          <form id="form-update-pricing-config" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2 items-end text-xs bg-white p-3 rounded-lg border border-slate-200">
+            <div>
+              <label class="block text-slate-700 font-semibold mb-1">Free Limit (KM)</label>
+              <input type="number" id="config-free-km" min="0" value="15" required class="w-full bg-slate-50 border border-slate-300 rounded p-2 text-slate-800 font-mono font-bold focus:border-red-600" />
+            </div>
+            <div>
+              <label class="block text-slate-700 font-semibold mb-1" title="Concrete Truck Mixer Transport Rate per KM above 15km">Truck Trans / KM</label>
+              <input type="number" id="config-truck-rate" min="0" value="120" required class="w-full bg-slate-50 border border-slate-300 rounded p-2 text-slate-800 font-mono font-bold focus:border-red-600" />
+            </div>
+            <div>
+              <label class="block text-slate-700 font-semibold mb-1 text-purple-700" title="Pump Car Transport Charge per KM above 15km">Pump Trans / KM</label>
+              <input type="number" id="config-pump-trans-rate" min="0" value="550" required class="w-full bg-slate-50 border border-purple-300 rounded p-2 text-slate-800 font-mono font-bold focus:border-purple-600" />
+            </div>
+            <div>
+              <label class="block text-slate-700 font-semibold mb-1">Pump Flat Fee (LKR)</label>
+              <input type="number" id="config-pump-fee" min="0" value="60000" required class="w-full bg-slate-50 border border-slate-300 rounded p-2 text-slate-800 font-mono font-bold focus:border-red-600" />
+            </div>
+            <div>
+              <label class="block text-slate-700 font-semibold mb-1">Pump Base Vol (m³)</label>
+              <input type="number" id="config-pump-base-vol" min="0" value="30" required class="w-full bg-slate-50 border border-slate-300 rounded p-2 text-slate-800 font-mono font-bold focus:border-red-600" />
+            </div>
+            <div>
+              <label class="block text-slate-700 font-semibold mb-1 text-red-600">Extra Pump / m³</label>
+              <input type="number" id="config-pump-extra-rate" min="0" value="2000" required class="w-full bg-slate-50 border border-red-300 rounded p-2 text-slate-800 font-mono font-bold focus:border-red-600" />
+            </div>
+            <div>
+              <label class="block text-slate-700 font-semibold mb-1 text-blue-600">Validity (Days)</label>
+              <input type="number" id="config-validity-days" min="1" value="2" required class="w-full bg-slate-50 border border-blue-300 rounded p-2 text-slate-800 font-mono font-bold focus:border-blue-600" />
+            </div>
+            <div class="lg:col-span-7 pt-1">
+              <button type="submit" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 rounded text-xs transition cursor-pointer shadow-xs">
+                Save All Transport & Pump Pricing Rules
+              </button>
+            </div>
+          </form>
+
+          <!-- Section 2: Add New Concrete Grade & Base Price -->
+          <div>
+            <span class="text-xs font-bold text-slate-800 block mb-2">Add / Update Concrete Grades:</span>
+            <form id="form-add-grade" class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end text-xs">
+              <div>
+                <input type="text" id="grade-name-input" placeholder="Grade Name (e.g. M35)" required class="w-full bg-white border border-slate-300 rounded p-2 text-slate-800 font-semibold focus:border-red-600" />
+              </div>
+              <div>
+                <input type="number" id="grade-price-input" min="1000" placeholder="Base Price / m³ (LKR)" required class="w-full bg-white border border-slate-300 rounded p-2 text-slate-800 font-mono font-bold focus:border-red-600" />
+              </div>
+              <div>
+                <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded text-xs transition cursor-pointer shadow-xs">
+                  + Add / Update Grade
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Current Active Grades List -->
+          <div id="grades-list-container" class="flex flex-wrap gap-2 text-xs pt-1">
+            <!-- Dynamically populated -->
+          </div>
+
+          <!-- Section 3: Customer-Specific Custom Pricing Rules (Master DB Linked) -->
+          <div class="border-t border-slate-200 pt-4 mt-3">
+            <div class="flex justify-between items-center mb-3">
+              <span class="text-xs font-extrabold text-slate-900 flex items-center">
+                <i class="fa-solid fa-user-tag text-blue-600 mr-1.5"></i> Customer-Specific Pricing & Discount Rules (Master DB Linked):
+              </span>
+              <button type="button" onclick="openAddCustomerPricingModal()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] py-1.5 px-3 rounded-lg transition cursor-pointer shadow-xs">
+                + Configure Customer Pricing Rule
+              </button>
+            </div>
+            
+            <div class="overflow-x-auto border border-slate-200 rounded-lg">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-100 font-bold text-slate-700 border-b border-slate-200">
+                  <tr>
+                    <th class="p-2 whitespace-nowrap">Customer Account</th>
+                    <th class="p-2 whitespace-nowrap">Discount / m³</th>
+                    <th class="p-2 whitespace-nowrap">Free KM</th>
+                    <th class="p-2 whitespace-nowrap">Truck / KM</th>
+                    <th class="p-2 whitespace-nowrap">Pump Flat</th>
+                    <th class="p-2 whitespace-nowrap">Extra Pump</th>
+                    <th class="p-2 whitespace-nowrap">Status</th>
+                    <th class="p-2 text-right whitespace-nowrap">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="table-customer-pricing-body">
+                  <!-- Dynamically populated -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Quotation Estimator Form -->
+          <div class="glass-card p-4 sm:p-5">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="text-sm font-bold text-slate-900 flex items-center">
+                <i class="fa-solid fa-calculator text-amber-600 mr-2"></i> STEP 3: Supply Cost Estimator
+              </h3>
+              <button onclick="window.excelExporter.exportTableToExcel('quotations')" class="btn-excel btn-excel-sm cursor-pointer">
+                <i class="fa-solid fa-file-excel"></i> Export
+              </button>
+            </div>
+            <form id="form-create-quotation" class="space-y-4 text-xs">
+              <div>
+                <label class="block text-slate-700 font-semibold mb-1">Select Opportunity *</label>
+                <select id="quote-opp-select" required class="w-full bg-white border border-slate-300 rounded p-2.5 text-slate-800 text-sm font-medium">
+                  <option value="">-- Select Opportunity --</option>
+                </select>
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-slate-700 font-semibold mb-1">Concrete Grade *</label>
+                  <select id="quote-grade" class="w-full bg-white border border-slate-300 rounded p-2.5 text-slate-800 font-semibold">
+                    <!-- Dynamically populated -->
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-slate-700 font-semibold mb-1">Distance (KM) *</label>
+                  <input type="number" id="quote-distance" value="10" min="0" required class="w-full bg-white border border-slate-300 rounded p-2.5 text-slate-800" />
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div class="flex items-center space-x-2 pt-6">
+                  <input type="checkbox" id="quote-pump" checked class="w-4 h-4 accent-red-600 rounded cursor-pointer" />
+                  <label for="quote-pump" class="text-slate-800 font-semibold cursor-pointer">Add Concrete Pump Car</label>
+                </div>
+                <div>
+                  <label class="block text-slate-700 font-semibold mb-1">Volume (m³) *</label>
+                  <input type="number" id="quote-volume" value="100" min="1" required class="w-full bg-white border border-slate-300 rounded p-2.5 text-slate-800" />
+                </div>
+              </div>
+
+              <!-- Price Validity Period (Days) -->
+              <div>
+                <label class="block text-slate-700 font-semibold mb-1">Price Validity Period (Days) *</label>
+                <input type="number" id="quote-validity-days" value="30" min="1" max="180" required class="w-full bg-white border border-slate-300 rounded p-2.5 text-slate-800 font-semibold" />
+                <span class="text-[10px] text-slate-500 block mt-0.5">Custom validity duration (e.g. 7, 14, 30, 60 days)</span>
+              </div>
+
+              <div>
+                <label class="block text-slate-700 font-semibold mb-1">Manual Price / m³ (Formula Check Active)</label>
+                <input type="number" id="quote-manual-price" placeholder="Auto-calculated" class="w-full bg-white border border-slate-300 rounded p-2.5 text-slate-800 font-mono font-bold" />
+                <span id="quote-price-lock-status" class="hidden">🔒 Self-Improvement Mode: Field Auto-Locked due to manual formula error patterns.</span>
+              </div>
+
+              <button type="submit" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 rounded text-sm transition shadow-md shadow-amber-600/20 cursor-pointer">
+                Generate Regional Plant Cost Estimate
+              </button>
+            </form>
+          </div>
+
+          <!-- Live Breakdown Card (RMC REGIONAL PLANT ESTIMATED PRICE) -->
+          <div class="glass-card p-4 sm:p-5 bg-gradient-to-b from-white to-slate-50 flex flex-col justify-between border-slate-200">
+            <div>
+              <div class="border-b border-slate-200 pb-3 mb-4">
+                <span class="text-[10px] font-extrabold uppercase text-red-600 tracking-wider block mb-0.5">Regional Plant</span>
+                <h3 class="text-sm sm:text-base font-black text-slate-900 flex items-center">
+                  <i class="fa-solid fa-calculator text-red-600 mr-2"></i> RMC Regional Plant Estimated Price
+                </h3>
+              </div>
+
+              <div class="space-y-3 text-xs">
+                <div class="flex justify-between py-2 border-b border-slate-100">
+                  <span class="text-slate-600 font-medium">1. Concrete Supply Charge per m³:</span>
+                  <span id="preview-base-price" class="font-bold text-slate-900">LKR 26,000 / m³</span>
+                </div>
+                <div class="flex justify-between py-2 border-b border-slate-100 pl-3 bg-slate-50/70 rounded">
+                  <span class="text-slate-500">Truck Mixer Transport (15KM Free):</span>
+                  <span id="preview-truck-transport" class="font-bold text-blue-700">LKR 0 (Free <=15km)</span>
+                </div>
+                <div class="flex justify-between py-2 border-b border-slate-100">
+                  <span class="text-slate-600 font-medium">2. Pump Car Total Cost (Flat + Trans + Extra m³):</span>
+                  <span id="preview-pump-cost" class="font-bold text-purple-700">LKR 15,000 (Flat Fee)</span>
+                </div>
+                <div class="flex justify-between py-3 border-b border-slate-200 bg-slate-100/80 px-3 rounded-lg">
+                  <span class="text-slate-900 font-bold">Combined Estimated Rate per m³:</span>
+                  <span id="preview-rate-m3" class="font-extrabold text-blue-600 text-sm">LKR 42,200 / m³</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-4 space-y-3">
+              <div class="p-3.5 bg-red-50 border border-red-200 rounded-xl text-center">
+                <span class="text-xs text-slate-500 block uppercase font-bold tracking-wider mb-1">Estimated Total Supply Cost</span>
+                <span id="preview-total-value" class="text-xl sm:text-2xl font-black text-red-600">LKR 4,220,000</span>
+              </div>
+
+              <!-- MANDATORY LEGAL NOTICE REGARDING PERFORMA INVOICE & NO PAYMENT -->
+              <div class="p-3 bg-amber-50 border border-amber-300 rounded-lg text-[11px] text-amber-900 space-y-1">
+                <div class="font-bold flex items-center text-amber-800">
+                  <i class="fa-solid fa-triangle-exclamation mr-1.5 text-amber-600"></i> IMPORTANT ESTIMATE NOTICE:
+                </div>
+                <p class="leading-relaxed">
+                  Subjected to Original Company issued Performa Invoice. <strong>Do not make payment for this quote</strong>, this is to roughly calculate the cost for the supply.
+                </p>
+              </div>
+
+              <!-- PRINT THERMAL RECEIPT BUTTON (80MM MINIMALIST PRINTER) -->
+              <button id="btn-print-thermal-quote" class="btn-thermal-print w-full text-xs cursor-pointer py-2.5">
+                <i class="fa-solid fa-print text-amber-400 mr-1.5"></i>
+                <span>Print Regional Plant Cost Estimate (80mm Thermal)</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 5: ORDER & DELIVERY MODULE -->
+      <section id="view-orders" class="view-panel hidden space-y-6">
+        <div class="glass-card p-4 sm:p-5">
+          <div class="flex justify-between items-center mb-4">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900 flex items-center">
+                <i class="fa-solid fa-truck-ramp-box text-emerald-600 mr-2"></i> Supply Orders & Delivery Tracker
+              </h3>
+              <span class="text-xs text-slate-500">Rule 4 Active: Completed automatically when delivered = confirmed volume.</span>
+            </div>
+            <button onclick="window.excelExporter.exportTableToExcel('orders')" class="btn-excel btn-excel-sm cursor-pointer">
+              <i class="fa-solid fa-file-excel"></i> Export
+            </button>
+          </div>
+
+          <div class="overflow-x-auto max-h-[calc(100vh-250px)] min-h-[420px] overflow-y-auto custom-scrollbar border border-slate-200 rounded-lg">
+            <table class="w-full text-left border-collapse">
+              <thead class="bg-slate-100 sticky top-0 z-10 backdrop-blur-xs shadow-2xs">
+                <tr class="border-b border-slate-200 text-xs font-bold text-slate-600 uppercase tracking-wider">
+                  <th class="py-3 px-3.5 whitespace-nowrap">Order ID</th>
+                  <th class="py-3 px-3.5 whitespace-nowrap">Customer</th>
+                  <th class="py-3 px-3.5 whitespace-nowrap">Sales Officer</th>
+                  <th class="py-3 px-3.5 whitespace-nowrap">Confirmed (m³)</th>
+                  <th class="py-3 px-3.5 whitespace-nowrap">Delivered (m³)</th>
+                  <th class="py-3 px-3.5 whitespace-nowrap">Supply Progress</th>
+                  <th class="py-3 px-3.5 whitespace-nowrap">Status</th>
+                  <th class="py-3 px-3.5 text-right whitespace-nowrap">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="table-orders-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 6: ACTIVITY AUDIT LOG -->
+      <section id="view-activity" class="view-panel hidden space-y-6">
+        <div class="glass-card p-4 sm:p-5">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-sm font-bold text-slate-900 flex items-center">
+              <i class="fa-solid fa-list-check text-slate-500 mr-2"></i> System Activity Audit Log
+            </h3>
+            <button onclick="window.excelExporter.exportTableToExcel('activity')" class="btn-excel btn-excel-sm cursor-pointer">
+              <i class="fa-solid fa-file-excel"></i> Export Log
+            </button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase bg-slate-50">
+                  <th class="py-2.5 px-3">Timestamp</th>
+                  <th class="py-2.5 px-3">Action</th>
+                  <th class="py-2.5 px-3">User</th>
+                  <th class="py-2.5 px-3">Audit Details</th>
+                </tr>
+              </thead>
+              <tbody id="table-activity-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 7: USER MANAGEMENT PANEL (ADMIN & MANAGERS) -->
+      <section id="view-users" class="view-panel hidden space-y-6">
+        <div class="glass-card p-4 sm:p-5">
+          <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <div>
+              <h3 class="text-base font-extrabold text-slate-900 flex items-center">
+                <i class="fa-solid fa-users-gear text-blue-600 mr-2"></i> User & Sales Engineer Management Panel
+              </h3>
+              <p class="text-xs text-slate-500">Admins can create, assign roles, edit PINs, and terminate sales engineer profiles.</p>
+            </div>
+            <button onclick="openAddUserModal()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs py-2 px-3.5 rounded-lg transition cursor-pointer shadow-xs flex items-center">
+              <i class="fa-solid fa-user-plus mr-1.5"></i> + Create Sales Engineer Profile
+            </button>
+          </div>
+
+          <!-- USERS SUMMARY CARDS -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4 text-xs">
+            <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+              <span class="text-slate-500 block font-medium">Total System Users</span>
+              <span id="user-count-total" class="text-lg font-bold text-slate-800">0</span>
+            </div>
+            <div class="bg-blue-50 p-3 rounded-lg border border-blue-200">
+              <span class="text-blue-700 block font-semibold">Sales Engineers</span>
+              <span id="user-count-engineers" class="text-lg font-bold text-blue-800">0</span>
+            </div>
+            <div class="bg-emerald-50 p-3 rounded-lg border border-emerald-200">
+              <span class="text-emerald-700 block font-semibold">Admins & Managers</span>
+              <span id="user-count-managers" class="text-lg font-bold text-emerald-800">0</span>
+            </div>
+            <div class="bg-red-50 p-3 rounded-lg border border-red-200">
+              <span class="text-red-700 block font-semibold">Terminated Accounts</span>
+              <span id="user-count-terminated" class="text-lg font-bold text-red-800">0</span>
+            </div>
+          </div>
+
+          <!-- USERS TABLE -->
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b border-slate-200 text-xs font-bold text-slate-500 uppercase tracking-wider bg-slate-50">
+                  <th class="py-3 px-3.5 whitespace-nowrap">User Profile</th>
+                  <th class="py-3 px-3.5 whitespace-nowrap">Username</th>
+                  <th class="py-3 px-3.5 whitespace-nowrap">Role</th>
+                  <th class="py-3 px-3.5 whitespace-nowrap">Mobile Key</th>
+                  <th class="py-3 px-3.5 whitespace-nowrap">Status</th>
+                  <th class="py-3 px-3.5 text-right whitespace-nowrap">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="table-users-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 9: MASTER DATABASE CONTROL PANEL (ADMIN & MANAGERS) -->
+      <section id="view-master-db" class="view-panel hidden space-y-5">
+        <div class="glass-card p-4 sm:p-5 border-amber-200 bg-white">
+          <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <div>
+              <h3 class="text-base font-extrabold text-slate-900 flex items-center">
+                <i class="fa-solid fa-database text-amber-500 mr-2"></i> Master Database Control Panel & Records Explorer
+              </h3>
+              <p class="text-xs text-slate-500">Directly inspect, search, filter, edit fields, delete records, and export system database collections.</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <button id="btn-export-master-table-excel" onclick="exportActiveMasterTableToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-2 px-3 rounded-lg transition cursor-pointer shadow-xs flex items-center">
+                <i class="fa-solid fa-file-excel mr-1.5"></i> Export Table to Excel
+              </button>
+              <button onclick="openAddMasterRowModal()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs py-2 px-3 rounded-lg transition cursor-pointer shadow-xs flex items-center">
+                <i class="fa-solid fa-plus mr-1.5"></i> Add New Entry
+              </button>
+              <button onclick="clearActiveMasterTable()" class="bg-red-50 hover:bg-red-100 text-red-700 border border-red-300 font-bold text-xs py-2 px-3 rounded-lg transition cursor-pointer flex items-center" title="Completely clear all records from the selected collection with cascading ERP integrity">
+                <i class="fa-solid fa-trash-can mr-1.5"></i> Clear Collection
+              </button>
+            </div>
+          </div>
+
+          <!-- TOP FILTERING & SEARCH CONTROLS -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200 mb-4">
+            <div>
+              <label class="block text-[11px] font-bold text-slate-600 mb-1">Select Database Collection</label>
+              <select id="master-db-table-select" onchange="renderMasterDBScreen()" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs font-bold text-slate-800 focus:border-amber-500">
+                <option value="salesVisits">📋 Sales Visits (salesVisits)</option>
+                <option value="opportunities">🎯 CRM Pipeline Deals (opportunities)</option>
+                <option value="quotations">🧾 Plant Cost Quotations (quotations)</option>
+                <option value="orders">🚚 Concrete Supply Orders (orders)</option>
+                <option value="pricingConfig">⚙️ Pricing Rules & Config (pricingConfig)</option>
+                <option value="customerPricingRules">🏢 Customer Pricing Rules (customerPricingRules)</option>
+                <option value="concreteGrades">🏗️ Concrete Grades & Base Prices (concreteGrades)</option>
+                <option value="users">👷 System Users & Engineers (users)</option>
+                <option value="deliveryLogs">📜 Batch Delivery Logs (deliveryLogs)</option>
+                <option value="activityLog">⏱️ Activity Audit Trail (activityLog)</option>
+              </select>
+            </div>
+            <div class="sm:col-span-2">
+              <label class="block text-[11px] font-bold text-slate-600 mb-1">Live Multi-Field Search Filter</label>
+              <div class="relative">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                <input type="text" id="master-db-search" oninput="renderMasterDBScreen()" placeholder="Type keyword to filter (Client Name, Phone, ID, Sales Rep, Grade, Location)..." class="w-full bg-white border border-slate-300 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-amber-500" />
+              </div>
+            </div>
+          </div>
+
+          <!-- SUMMARY BADGE BAR -->
+          <div class="flex items-center justify-between text-xs mb-3 text-slate-600 bg-amber-50/60 p-2.5 rounded-lg border border-amber-200">
+            <span class="font-bold text-amber-900">
+              <i class="fa-solid fa-table mr-1 text-amber-600"></i> Active Table: <span id="master-db-active-table-name" class="font-mono text-amber-800 font-extrabold">salesVisits</span>
+            </span>
+            <span class="font-bold">
+              Total Records Found: <span id="master-db-record-count" class="bg-amber-600 text-white px-2 py-0.5 rounded-full text-[11px]">0</span>
+            </span>
+          </div>
+
+          <!-- FIXED HEADER SCROLLABLE TABLE CONTAINER -->
+          <div class="max-h-[500px] overflow-y-auto border border-slate-200 rounded-xl shadow-2xs bg-white">
+            <table class="w-full text-left border-collapse">
+              <thead id="table-master-db-head" class="sticky top-0 z-10 bg-slate-100 border-b border-slate-300 text-[11px] font-bold text-slate-700 uppercase tracking-wider shadow-2xs">
+              </thead>
+              <tbody id="table-master-db-body" class="divide-y divide-slate-200 text-xs font-medium text-slate-800">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 8: AUTO QA TEST SUITE -->
+      <section id="view-auto-qa" class="view-panel hidden space-y-6">
+        <div class="glass-card p-4 sm:p-6 border-red-200 bg-white">
+          <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+            <div>
+              <h2 class="text-base sm:text-lg font-bold text-red-600 flex items-center">
+                <i class="fa-solid fa-vial-circle-check mr-2"></i> Automated QA & Sales Simulation Suite
+              </h2>
+              <p class="text-xs text-slate-600">Simulates 10 sales scenarios, validates pricing formulas, detects errors & verifies auto-corrections.</p>
+            </div>
+            <button id="btn-run-auto-qa" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg text-sm transition shadow-md shadow-red-600/20 flex items-center cursor-pointer">
+              <i class="fa-solid fa-vial mr-2"></i> Run 10-Scenario QA Test Suite
+            </button>
+          </div>
+
+          <div id="qa-test-results-container" class="space-y-3"></div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- MOBILE STICKY BOTTOM TAB NAVIGATION -->
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-50 px-2 py-1.5 flex justify-around shadow-lg">
+    <a href="#" data-view="dashboard" class="mobile-nav-link text-center text-[10px] text-red-600 font-bold flex flex-col items-center">
+      <i class="fa-solid fa-chart-pie text-base mb-0.5"></i>
+      <span>Home</span>
+    </a>
+    <a href="#" data-view="visits" class="mobile-nav-link text-center text-[10px] text-slate-500 font-medium flex flex-col items-center">
+      <i class="fa-solid fa-clipboard-user text-base mb-0.5"></i>
+      <span>Visits</span>
+    </a>
+    <a href="#" data-view="pipeline" class="mobile-nav-link text-center text-[10px] text-slate-500 font-medium flex flex-col items-center">
+      <i class="fa-solid fa-kanban text-base mb-0.5"></i>
+      <span>Pipeline</span>
+    </a>
+    <a href="#" data-view="quotation" class="mobile-nav-link text-center text-[10px] text-slate-500 font-medium flex flex-col items-center">
+      <i class="fa-solid fa-calculator text-base mb-0.5"></i>
+      <span>Quote</span>
+    </a>
+    <a href="#" data-view="orders" class="mobile-nav-link text-center text-[10px] text-slate-500 font-medium flex flex-col items-center">
+      <i class="fa-solid fa-truck-ramp-box text-base mb-0.5"></i>
+      <span>Orders</span>
+    </a>
+  </nav>
+
+  <!-- MODAL: THERMAL RECEIPT PRINT PREVIEW (80mm + PDF Export & WhatsApp Direct Share) -->
+  <div id="modal-thermal-receipt" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center hidden p-3">
+    <div class="glass-card max-w-sm w-full p-4 border border-slate-200 relative bg-white shadow-2xl max-h-[90vh] flex flex-col">
+      <div class="flex justify-between items-center pb-2 border-b border-slate-200 mb-3">
+        <h3 class="text-xs font-bold text-slate-900 flex items-center">
+          <i class="fa-solid fa-file-invoice text-red-600 mr-1.5"></i> 80mm Cost Estimate Preview
+        </h3>
+        <button onclick="closeModal('modal-thermal-receipt')" class="text-slate-400 hover:text-slate-700 text-lg cursor-pointer">&times;</button>
+      </div>
+      
+      <!-- RECEIPT PREVIEW CONTENT -->
+      <div id="modal-thermal-content" class="flex-1 overflow-y-auto mb-3"></div>
+
+      <!-- ACTION BUTTONS: Print 80mm, Export PDF, WhatsApp Share -->
+      <div class="space-y-2 pt-2 border-t border-slate-200">
+        <div class="grid grid-cols-2 gap-2">
+          <button id="btn-export-pdf-quote" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-2.5 rounded text-xs transition cursor-pointer flex items-center justify-center shadow-xs">
+            <i class="fa-solid fa-file-pdf mr-1.5"></i> Export PDF
+          </button>
+          <button id="btn-share-whatsapp-quote" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-2.5 rounded text-xs transition cursor-pointer flex items-center justify-center shadow-xs">
+            <i class="fa-brands fa-whatsapp mr-1.5 text-sm"></i> Share WhatsApp
+          </button>
+        </div>
+        <div class="flex space-x-2">
+          <button id="btn-trigger-hardware-print" class="flex-1 bg-slate-900 hover:bg-black text-white font-bold py-2 px-3 rounded text-xs transition cursor-pointer flex items-center justify-center shadow-xs">
+            <i class="fa-solid fa-print mr-1.5"></i> Print 80mm Hardware
+          </button>
+          <button onclick="closeModal('modal-thermal-receipt')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 px-3 rounded text-xs transition cursor-pointer">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: OPPORTUNITY STAGE CHANGE -->
+  <div id="modal-opportunity" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center hidden p-3">
+    <div class="glass-card max-w-md w-full p-5 border border-slate-200 relative bg-white shadow-xl max-h-[90vh] overflow-y-auto">
+      <div id="modal-opportunity-content"></div>
+    </div>
+  </div>
+
+  <!-- MODAL OVERLAY: SECURE USER LOGIN SCREEN -->
+  <div id="modal-login" class="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[100] flex items-center justify-center p-3">
+    <div class="glass-card max-w-md w-full p-6 border border-slate-200 relative bg-white shadow-2xl rounded-2xl">
+      <div class="text-center mb-5">
+        <div class="w-14 h-14 rounded-2xl tokyo-brand-badge flex items-center justify-center text-white font-black text-2xl shadow-lg mx-auto mb-3">
+          RM
+        </div>
+        <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">READY MIX CONCRETE ERP</h2>
+        <p class="text-xs text-slate-500 mt-1 font-medium">Anuradhapura Plant Enterprise Portal - User Login</p>
+      </div>
+
+      <!-- Quick Fill Demo Profiles -->
+      <div class="mb-4 bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-xs">
+        <span class="font-bold text-slate-700 block mb-1">⚡ Quick Fill Demo Accounts (PIN: 1234):</span>
+        <div class="flex flex-wrap gap-1.5">
+          <button type="button" onclick="fillDemoAccount('admin', '1234')" class="bg-white hover:bg-slate-200 text-slate-800 border border-slate-300 px-2 py-1 rounded text-[11px] font-bold cursor-pointer transition">
+            👑 Admin (admin)
+          </button>
+          <button type="button" onclick="fillDemoAccount('manager', '1234')" class="bg-white hover:bg-slate-200 text-slate-800 border border-slate-300 px-2 py-1 rounded text-[11px] font-bold cursor-pointer transition">
+            👔 Manager (manager)
+          </button>
+          <button type="button" onclick="fillDemoAccount('sunil', '1234')" class="bg-white hover:bg-slate-200 text-slate-800 border border-slate-300 px-2 py-1 rounded text-[11px] font-bold cursor-pointer transition">
+            👷 Sunil (sunil)
+          </button>
+        </div>
+      </div>
+
+      <form id="form-login" onsubmit="handleUserLogin(event)" class="space-y-4">
+        <div id="login-error-alert" class="hidden p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg font-medium"></div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Username / Mobile</label>
+          <div class="relative">
+            <i class="fa-solid fa-user absolute left-3 top-3 text-slate-400 text-xs"></i>
+            <input type="text" id="login-username" required placeholder="Enter username (e.g. admin, sunil)" class="w-full bg-slate-50 border border-slate-300 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-red-600 font-medium" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Security PIN Code</label>
+          <div class="relative">
+            <i class="fa-solid fa-lock absolute left-3 top-3 text-slate-400 text-xs"></i>
+            <input type="password" id="login-pin" required maxlength="6" placeholder="Enter numeric PIN (e.g. 1234)" class="w-full bg-slate-50 border border-slate-300 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-red-600 font-mono font-bold tracking-widest" />
+          </div>
+        </div>
+
+        <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-extrabold py-2.5 px-4 rounded-lg text-sm transition cursor-pointer shadow-md flex items-center justify-center">
+          <i class="fa-solid fa-right-to-bracket mr-2"></i> Log In to System
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD / EDIT SALES ENGINEER USER PROFILE -->
+  <div id="modal-user-edit" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center hidden p-3">
+    <div class="glass-card max-w-md w-full p-5 border border-slate-200 relative bg-white shadow-xl rounded-2xl max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center pb-3 border-b border-slate-200 mb-4">
+        <h3 id="modal-user-title" class="text-sm font-extrabold text-slate-900 flex items-center">
+          <i class="fa-solid fa-user-gear text-blue-600 mr-2"></i> Edit User Profile
+        </h3>
+        <button onclick="closeModal('modal-user-edit')" class="text-slate-400 hover:text-slate-700 text-lg cursor-pointer">&times;</button>
+      </div>
+
+      <form id="form-user-edit" onsubmit="saveUserProfile(event)" class="space-y-3.5">
+        <input type="hidden" id="user-edit-id" />
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Full Name *</label>
+          <input type="text" id="user-edit-name" required placeholder="e.g. Kasun Rajapakshe" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs text-slate-900 font-medium" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Username *</label>
+            <input type="text" id="user-edit-username" required placeholder="e.g. kasun" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs text-slate-900 font-mono" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">PIN Code *</label>
+            <input type="text" id="user-edit-pin" required maxlength="6" placeholder="e.g. 1234" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs text-slate-900 font-mono font-bold" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Role *</label>
+            <select id="user-edit-role" required class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs text-slate-800 font-bold">
+              <option value="Sales Engineer">Sales Engineer</option>
+              <option value="Manager">Manager</option>
+              <option value="Admin">Admin</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">10-Digit Mobile Key *</label>
+            <input type="text" id="user-edit-phone" required placeholder="e.g. 0778889900" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs text-slate-900 font-mono" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Account Access Status *</label>
+          <select id="user-edit-status" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs text-slate-800 font-bold">
+            <option value="Active">🟢 Active (Access Permitted)</option>
+            <option value="Terminated">🔴 Terminated (Access Suspended)</option>
+          </select>
+        </div>
+
+        <div class="pt-3 flex justify-end space-x-2 border-t border-slate-200">
+          <button type="button" onclick="closeModal('modal-user-edit')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2 px-3.5 rounded-lg transition cursor-pointer">
+            Cancel
+          </button>
+          <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 px-4 rounded-lg transition cursor-pointer shadow-xs">
+            Save User Profile
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: DIRECT EDIT MASTER DATABASE RECORD -->
+  <div id="modal-master-db-edit" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center hidden p-3">
+    <div class="glass-card max-w-lg w-full p-5 border border-slate-200 relative bg-white shadow-xl rounded-2xl max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center pb-3 border-b border-slate-200 mb-4">
+        <h3 id="modal-master-title" class="text-sm font-extrabold text-slate-900 flex items-center">
+          <i class="fa-solid fa-pen-to-square text-amber-500 mr-2"></i> Edit Master Database Entry
+        </h3>
+        <button onclick="closeModal('modal-master-db-edit')" class="text-slate-400 hover:text-slate-700 text-lg cursor-pointer">&times;</button>
+      </div>
+
+      <form id="form-master-db-edit" onsubmit="saveMasterRowEdit(event)" class="space-y-3">
+        <input type="hidden" id="master-edit-table" />
+        <input type="hidden" id="master-edit-id" />
+
+        <div id="master-edit-fields-container" class="space-y-3 max-h-[60vh] overflow-y-auto pr-1"></div>
+
+        <div class="pt-3 flex justify-end space-x-2 border-t border-slate-200">
+          <button type="button" onclick="closeModal('modal-master-db-edit')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2 px-3.5 rounded-lg transition cursor-pointer">
+            Cancel
+          </button>
+          <button type="submit" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold py-2 px-4 rounded-lg transition cursor-pointer shadow-xs">
+            Save Record Changes
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD / EDIT CUSTOMER PRICING RULE -->
+  <div id="modal-customer-pricing-edit" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center hidden p-3">
+    <div class="glass-card max-w-md w-full p-5 border border-slate-200 relative bg-white shadow-xl rounded-2xl max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center pb-3 border-b border-slate-200 mb-4">
+        <h3 id="modal-cust-pricing-title" class="text-sm font-extrabold text-slate-900 flex items-center">
+          <i class="fa-solid fa-user-tag text-blue-600 mr-2"></i> Configure Customer Pricing Rule
+        </h3>
+        <button onclick="closeModal('modal-customer-pricing-edit')" class="text-slate-400 hover:text-slate-700 text-lg cursor-pointer">&times;</button>
+      </div>
+
+      <form id="form-customer-pricing-edit" onsubmit="saveCustomerPricingRuleHandler(event)" class="space-y-3">
+        <input type="hidden" id="cust-pricing-id" />
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Select Customer Account / Mobile Key *</label>
+          <select id="cust-pricing-phone-select" onchange="syncCustPricingCustomerName()" required class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs font-bold text-slate-800">
+            <!-- Dynamically populated from db.getUniqueCustomers() -->
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Customer Account Name *</label>
+          <input type="text" id="cust-pricing-name" required placeholder="e.g. MAGA Engineering" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs text-slate-900 font-medium" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1 text-emerald-700">Special Discount / m³ (LKR)</label>
+            <input type="number" id="cust-pricing-discount" min="0" value="1000" placeholder="e.g. 1000" class="w-full bg-slate-50 border border-emerald-300 rounded-lg p-2 text-xs text-slate-900 font-mono font-bold" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1 text-blue-700">Free Transport (KM)</label>
+            <input type="number" id="cust-pricing-free-km" min="0" value="20" placeholder="e.g. 20" class="w-full bg-slate-50 border border-blue-300 rounded-lg p-2 text-xs text-slate-900 font-mono font-bold" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Truck Rate / KM (LKR)</label>
+            <input type="number" id="cust-pricing-truck-rate" min="0" value="100" placeholder="e.g. 100" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs text-slate-900 font-mono font-bold" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Pump Flat Fee (LKR)</label>
+            <input type="number" id="cust-pricing-pump-fee" min="0" value="50000" placeholder="e.g. 50000" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs text-slate-900 font-mono font-bold" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Extra Pump / m³ (LKR)</label>
+            <input type="number" id="cust-pricing-extra-pump" min="0" value="1800" placeholder="e.g. 1800" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs text-slate-900 font-mono font-bold" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Validity (Days)</label>
+            <input type="number" id="cust-pricing-validity" min="1" value="14" placeholder="e.g. 14" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs text-slate-900 font-mono font-bold" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Notes / Reason for Custom Pricing</label>
+          <input type="text" id="cust-pricing-notes" placeholder="VIP Infrastructure Contractor Tier 1 Corporate Discount" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs text-slate-900" />
+        </div>
+
+        <div class="pt-3 flex justify-end space-x-2 border-t border-slate-200">
+          <button type="button" onclick="closeModal('modal-customer-pricing-edit')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2 px-3.5 rounded-lg transition cursor-pointer">
+            Cancel
+          </button>
+          <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 px-4 rounded-lg transition cursor-pointer shadow-xs">
+            Save Customer Pricing Rule
+          </button>
+        </div>
+      </form>
+    </div>
+  <!-- MODAL: FIREBASE CLOUD DATABASE CONFIGURATION -->
+  <div id="modal-firebase-config" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center hidden p-3">
+    <div class="glass-card max-w-md w-full p-5 border border-slate-200 relative bg-white shadow-xl rounded-2xl max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center pb-3 border-b border-slate-200 mb-4">
+        <h3 class="text-sm font-extrabold text-slate-900 flex items-center">
+          <i class="fa-solid fa-fire text-amber-500 mr-2"></i> Firebase Cloud Database Settings
+        </h3>
+        <button onclick="closeModal('modal-firebase-config')" class="text-slate-400 hover:text-slate-700 text-lg cursor-pointer">&times;</button>
+      </div>
+
+      <p class="text-xs text-slate-600 mb-3">
+        Connect your application to a live Firebase Realtime Database for instant multi-user cloud syncing across mobile devices and computers.
+      </p>
+
+      <form id="form-firebase-config" onsubmit="saveFirebaseConfigHandler(event)" class="space-y-3">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Firebase Database URL *</label>
+          <input type="url" id="fb-config-dburl" placeholder="https://your-project-default-rtdb.firebaseio.com" required class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs font-mono text-slate-900" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Firebase API Key *</label>
+          <input type="text" id="fb-config-apikey" placeholder="AIzaSy..." required class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs font-mono text-slate-900" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Firebase Project ID *</label>
+          <input type="text" id="fb-config-projid" placeholder="your-project-id" required class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs font-mono text-slate-900" />
+        </div>
+
+        <div class="p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-[11px] text-amber-900">
+          <i class="fa-solid fa-lightbulb text-amber-600 mr-1"></i>
+          <strong>Offline-First Protection:</strong> If offline or unconfigured, all data persists safely in LocalStorage and syncs automatically when reconnected!
+        </div>
+
+        <div class="pt-3 flex justify-between items-center border-t border-slate-200">
+          <button type="button" onclick="disconnectFirebaseHandler()" class="bg-red-50 hover:bg-red-100 text-red-700 font-bold text-xs py-2 px-3 rounded-lg border border-red-200 transition cursor-pointer">
+            Disconnect Cloud
+          </button>
+          <div class="space-x-2">
+            <button type="button" onclick="closeModal('modal-firebase-config')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2 px-3 rounded-lg transition cursor-pointer">
+              Cancel
+            </button>
+            <button type="submit" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold py-2 px-4 rounded-lg transition cursor-pointer shadow-xs">
+              Connect & Sync Firebase
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- HIDDEN PRINT AREA FOR HARDWARE THERMAL PRINTER (80mm) -->
+  <div id="thermal-print-area" class="hidden"></div>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toast-container"></div>
+
+  <!-- MOBILE BOTTOM NAVIGATION BAR (IPHONE 15 & REDMI C13 OPTIMIZED) -->
+  <div class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 py-1.5 px-2 flex justify-around items-center shadow-lg text-[10px] font-semibold text-slate-600">
+    <a href="#" data-view="dashboard" class="mobile-nav-link flex flex-col items-center p-1 rounded text-red-600 font-bold">
+      <i class="fa-solid fa-chart-pie text-base mb-0.5"></i>
+      <span>Dashboard</span>
+    </a>
+    <a href="#" data-view="visits" class="mobile-nav-link flex flex-col items-center p-1 rounded hover:text-slate-900">
+      <i class="fa-solid fa-clipboard-user text-base mb-0.5"></i>
+      <span>Visits</span>
+    </a>
+    <a href="#" data-view="pipeline" class="mobile-nav-link flex flex-col items-center p-1 rounded hover:text-slate-900">
+      <i class="fa-solid fa-kanban text-base mb-0.5 text-purple-600"></i>
+      <span>Pipeline</span>
+    </a>
+    <a href="#" data-view="orders" class="mobile-nav-link flex flex-col items-center p-1 rounded hover:text-slate-900">
+      <i class="fa-solid fa-truck-ramp-box text-base mb-0.5 text-emerald-600"></i>
+      <span>Orders</span>
+    </a>
+    <button onclick="toggleMobileNavDrawer()" class="flex flex-col items-center p-1 rounded hover:text-slate-900 cursor-pointer">
+      <i class="fa-solid fa-bars-staggered text-base mb-0.5 text-amber-500"></i>
+      <span>Menu</span>
+    </button>
+  </div>
+
+  <!-- MOBILE SLIDE-OUT NAVIGATION DRAWER -->
+  <div id="mobile-nav-drawer" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden md:hidden" onclick="toggleMobileNavDrawer(event)">
+    <div class="w-72 bg-white h-full shadow-2xl p-4 flex flex-col justify-between overflow-y-auto" onclick="event.stopPropagation()">
+      <div class="space-y-4">
+        <div class="flex justify-between items-center pb-3 border-b border-slate-200">
+          <div class="flex items-center space-x-2">
+            <div class="w-8 h-8 rounded-lg tokyo-brand-badge flex items-center justify-center text-white font-black text-sm shadow-md">RM</div>
+            <span class="font-extrabold text-slate-900 text-sm">RMC Plant Nav</span>
+          </div>
+          <button onclick="toggleMobileNavDrawer()" class="text-slate-400 hover:text-slate-700 text-lg cursor-pointer p-1">&times;</button>
+        </div>
+
+        <nav class="space-y-1 text-xs font-semibold">
+          <a href="#" data-view="dashboard" class="mobile-drawer-link flex items-center px-3 py-2.5 rounded-lg text-slate-700 hover:bg-slate-100">
+            <i class="fa-solid fa-chart-pie w-6 text-red-600"></i> Dashboard & Insights
+          </a>
+          <a href="#" data-view="visits" class="mobile-drawer-link flex items-center px-3 py-2.5 rounded-lg text-slate-700 hover:bg-slate-100">
+            <i class="fa-solid fa-clipboard-user w-6 text-slate-500"></i> Sales Visits
+          </a>
+          <a href="#" data-view="pipeline" class="mobile-drawer-link flex items-center px-3 py-2.5 rounded-lg text-slate-700 hover:bg-slate-100">
+            <i class="fa-solid fa-kanban w-6 text-purple-600"></i> CRM Pipeline
+          </a>
+          <a href="#" data-view="quotation" class="mobile-drawer-link flex items-center px-3 py-2.5 rounded-lg text-slate-700 hover:bg-slate-100">
+            <i class="fa-solid fa-calculator w-6 text-amber-600"></i> Pricing & Rules
+          </a>
+          <a href="#" data-view="orders" class="mobile-drawer-link flex items-center px-3 py-2.5 rounded-lg text-slate-700 hover:bg-slate-100">
+            <i class="fa-solid fa-truck-ramp-box w-6 text-emerald-600"></i> Orders & Delivery
+          </a>
+          <a href="#" data-view="activity" class="mobile-drawer-link flex items-center px-3 py-2.5 rounded-lg text-slate-700 hover:bg-slate-100">
+            <i class="fa-solid fa-list-check w-6 text-slate-500"></i> Activity Audit Log
+          </a>
+          <a href="#" id="mobile-nav-users" data-view="users" class="mobile-drawer-link flex items-center px-3 py-2.5 rounded-lg text-slate-700 hover:bg-slate-100">
+            <i class="fa-solid fa-users-gear w-6 text-blue-600"></i> User Management
+          </a>
+          <a href="#" id="mobile-nav-master-db" data-view="master-db" class="mobile-drawer-link flex items-center px-3 py-2.5 rounded-lg text-slate-700 hover:bg-slate-100">
+            <i class="fa-solid fa-database w-6 text-amber-500"></i> Master Database
+          </a>
+          <a href="#" id="mobile-nav-auto-qa" data-view="auto-qa" class="mobile-drawer-link flex items-center px-3 py-2.5 rounded-lg text-slate-700 hover:bg-red-50 hover:text-red-600 transition mt-2 border border-red-200 bg-red-50/50">
+            <i class="fa-solid fa-vial w-6 text-red-600"></i> Auto QA Test Suite
+          </a>
+        </nav>
+      </div>
+
+      <div class="pt-4 border-t border-slate-200 space-y-2">
+        <button onclick="logoutUser()" class="w-full bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 font-bold py-2 rounded-lg text-xs transition flex items-center justify-center space-x-2">
+          <i class="fa-solid fa-right-from-bracket"></i>
+          <span>Sign Out Session</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- APPLICATION SCRIPTS (CDN & VANILLA JS MODULES) -->
+  <script src="js/db.js"></script>
+  <script src="js/pricingEngine.js"></script>
+  <script src="js/rulesEngine.js"></script>
+  <script src="js/aiEngine.js"></script>
+  <script src="js/selfImprovement.js"></script>
+  <script src="js/autoQA.js"></script>
+  <script src="js/excelExport.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
