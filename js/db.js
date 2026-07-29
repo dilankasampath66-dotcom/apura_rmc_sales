@@ -1,8 +1,12 @@
 /**
  * RMC Sales System Database Layer
- * Handles in-memory CRUD operations with LocalStorage fallback, Master DB JSON export/import & seed data.
+ * Firebase Realtime Database is the Single Source of Truth (SSOT).
+ * On startup, in-memory state is EMPTY. Firebase listener populates it from the cloud.
+ * NO mock/sample data is ever injected when the database is empty or unreachable.
  */
 
+// SEED CONFIG — never used as a data fallback. Only provides default pricing config
+// and initial user accounts (admin/manager). All other data must come from Firebase.
 const initialSeedData = {
   pricingConfig: {
     free_transport_km: 15,
@@ -18,208 +22,15 @@ const initialSeedData = {
     { id: 2, grade_name: 'M25', base_price_lkr: 26000 },
     { id: 3, grade_name: 'M30', base_price_lkr: 28500 }
   ],
-  salesVisits: [
-    {
-      id: 1,
-      date: '2026-07-20',
-      sales_officer: 'Sunil Perera',
-      customer_name: 'Access Engineering',
-      location: 'Colombo 03',
-      contact: '0771234567',
-      notes: 'High-rise foundation slab, requires pump setup.',
-      customer_type: 'Infrastructure',
-      concrete_grade: 'M30',
-      project_size_m3: 450,
-      distance_km: 15
-    },
-    {
-      id: 2,
-      date: '2026-07-22',
-      sales_officer: 'Kamal Silva',
-      customer_name: 'Prime Lands',
-      location: 'Nugegoda',
-      contact: '0719876543',
-      notes: 'Residential luxury apartments, ground floor pouring.',
-      customer_type: 'Commercial',
-      concrete_grade: 'M25',
-      project_size_m3: 200,
-      distance_km: 12
-    },
-    {
-      id: 3,
-      date: '2026-07-25',
-      sales_officer: 'Nimal Fernando',
-      customer_name: 'ICC Construction',
-      location: 'Kaduwela',
-      contact: '0765558899',
-      notes: 'Bridge pier concrete casting.',
-      customer_type: 'Infrastructure',
-      concrete_grade: 'M30',
-      project_size_m3: 800,
-      distance_km: 18
-    },
-    {
-      id: 4,
-      date: '2026-07-26',
-      sales_officer: 'Sunil Perera',
-      customer_name: 'MAGA Engineering',
-      location: 'Rajagiriya',
-      contact: '0704443322',
-      notes: 'Commercial complex columns and beams.',
-      customer_type: 'Commercial',
-      concrete_grade: 'M20',
-      project_size_m3: 350,
-      distance_km: 10
-    }
-  ],
-  opportunities: [
-    {
-      id: 101,
-      visit_id: 1,
-      customer_name: 'Access Engineering',
-      contact: '0771234567',
-      distance_km: 15,
-      sales_officer: 'Sunil Perera',
-      concrete_grade: 'M30',
-      stage: 'Negotiation',
-      expected_volume_m3: 450,
-      expected_value_lkr: 14175000,
-      probability: 75,
-      updated_at: '2026-07-26T10:00:00.000Z',
-      lost_reason: ''
-    },
-    {
-      id: 102,
-      visit_id: 2,
-      customer_name: 'Prime Lands',
-      contact: '0719876543',
-      distance_km: 12,
-      sales_officer: 'Kamal Silva',
-      concrete_grade: 'M25',
-      stage: 'Quote',
-      expected_volume_m3: 200,
-      expected_value_lkr: 5740000,
-      probability: 50,
-      updated_at: '2026-07-22T14:30:00.000Z',
-      lost_reason: ''
-    },
-    {
-      id: 103,
-      visit_id: 3,
-      customer_name: 'ICC Construction',
-      contact: '0765558899',
-      distance_km: 18,
-      sales_officer: 'Nimal Fernando',
-      concrete_grade: 'M30',
-      stage: 'Won',
-      expected_volume_m3: 800,
-      expected_value_lkr: 25680000,
-      probability: 100,
-      updated_at: '2026-07-25T16:00:00.000Z',
-      lost_reason: ''
-    },
-    {
-      id: 104,
-      visit_id: 4,
-      customer_name: 'MAGA Engineering',
-      contact: '0704443322',
-      distance_km: 10,
-      sales_officer: 'Sunil Perera',
-      concrete_grade: 'M20',
-      stage: 'Lead',
-      expected_volume_m3: 350,
-      expected_value_lkr: 10325000,
-      probability: 25,
-      updated_at: '2026-07-26T11:15:00.000Z',
-      lost_reason: ''
-    }
-  ],
-  quotations: [
-    {
-      id: 201,
-      opportunity_id: 101,
-      concrete_grade: 'M30',
-      distance_km: 15,
-      pump_required: true,
-      price_per_m3: 31500,
-      total_value: 14175000,
-      validity_days: 30,
-      validity_date: '2026-08-20'
-    },
-    {
-      id: 202,
-      opportunity_id: 102,
-      concrete_grade: 'M25',
-      distance_km: 12,
-      pump_required: true,
-      price_per_m3: 28700,
-      total_value: 5740000,
-      validity_days: 30,
-      validity_date: '2026-08-15'
-    },
-    {
-      id: 203,
-      opportunity_id: 103,
-      concrete_grade: 'M30',
-      distance_km: 18,
-      pump_required: true,
-      price_per_m3: 32100,
-      total_value: 25680000,
-      validity_days: 30,
-      validity_date: '2026-08-25'
-    }
-  ],
-  orders: [
-    {
-      id: 301,
-      opportunity_id: 103,
-      customer_name: 'ICC Construction',
-      sales_officer: 'Nimal Fernando',
-      confirmed_volume_m3: 800,
-      delivered_volume_m3: 520,
-      unit_price_lkr: 32100,
-      total_revenue_lkr: 16692000,
-      status: 'Active'
-    }
-  ],
-  deliveryLogs: [
-    {
-      id: 501,
-      order_id: 301,
-      dispatch_date: '2026-07-25',
-      volume_m3: 320,
-      docket_no: 'DOC-8841',
-      truck_no: 'WP LA-4521',
-      logged_by: 'Nimal Fernando',
-      created_at: '2026-07-25T16:05:00.000Z'
-    },
-    {
-      id: 502,
-      order_id: 301,
-      dispatch_date: '2026-07-26',
-      volume_m3: 200,
-      docket_no: 'DOC-8855',
-      truck_no: 'WP LA-7812',
-      logged_by: 'Nimal Fernando',
-      created_at: '2026-07-26T09:30:00.000Z'
-    }
-  ],
-  activityLog: [
-    {
-      id: 401,
-      timestamp: '2026-07-25 16:05:00',
-      action: 'SYSTEM_AUTO_ORDER',
-      user: 'System Engine',
-      details: 'Auto-created Order #301 because Opportunity #103 moved to Won stage.'
-    },
-    {
-      id: 402,
-      timestamp: '2026-07-26 09:30:00',
-      action: 'DELIVERY_LOGGED',
-      user: 'Nimal Fernando',
-      details: 'Logged 200m³ delivery for Order #301. Total delivered: 520m³ / 800m³.'
-    }
-  ],
+  // ⚠️  ZERO SAMPLE RECORDS — salesVisits, opportunities, orders, deliveryLogs
+  // are intentionally empty. Real data must come exclusively from Firebase RTDB.
+  salesVisits: [],
+  opportunities: [],
+  quotations: [],
+  orders: [],
+  deliveryLogs: [],
+  activityLog: [],
+  // Seed login accounts — always bootstrapped if missing from Firebase
   users: [
     {
       id: 1,
@@ -240,76 +51,9 @@ const initialSeedData = {
       phone: '0772220000',
       status: 'Active',
       created_at: '2026-07-01T08:00:00.000Z'
-    },
-    {
-      id: 3,
-      name: 'Sunil Perera',
-      username: 'sunil',
-      pin: '1234',
-      role: 'Sales Engineer',
-      phone: '0771234567',
-      status: 'Active',
-      created_at: '2026-07-05T08:00:00.000Z'
-    },
-    {
-      id: 4,
-      name: 'Kamal Silva',
-      username: 'kamal',
-      pin: '1234',
-      role: 'Sales Engineer',
-      phone: '0719876543',
-      status: 'Active',
-      created_at: '2026-07-05T08:00:00.000Z'
-    },
-    {
-      id: 5,
-      name: 'Nimal Fernando',
-      username: 'nimal',
-      pin: '1234',
-      role: 'Sales Engineer',
-      phone: '0765558899',
-      status: 'Active',
-      created_at: '2026-07-05T08:00:00.000Z'
-    },
-    {
-      id: 6,
-      name: 'Wasantha',
-      username: 'wasantha',
-      pin: '1234',
-      role: 'Sales Engineer',
-      phone: '0701234567',
-      status: 'Active',
-      created_at: '2026-07-05T08:00:00.000Z'
     }
   ],
-  customerPricingRules: [
-    {
-      id: 1,
-      contact: '0704443322',
-      customer_name: 'MAGA Engineering',
-      discount_per_m3_lkr: 1000,
-      free_transport_km: 20,
-      truck_mixer_rate_per_km_lkr: 100,
-      pump_flat_fee_lkr: 50000,
-      pump_extra_rate_per_m3_lkr: 1800,
-      validity_days: 14,
-      status: 'Active',
-      notes: 'VIP Infrastructure Contractor Tier 1 Corporate Discount'
-    },
-    {
-      id: 2,
-      contact: '0779991122',
-      customer_name: 'Sanken Overseas',
-      discount_per_m3_lkr: 1500,
-      free_transport_km: 25,
-      truck_mixer_rate_per_km_lkr: 110,
-      pump_flat_fee_lkr: 45000,
-      pump_extra_rate_per_m3_lkr: 1750,
-      validity_days: 30,
-      status: 'Active',
-      notes: 'Key Account Special Pricing Agreement 2026'
-    }
-  ]
+  customerPricingRules: []
 };
 
 const DB_KEY = 'TMX_RMC_DB_V1';
@@ -528,8 +272,21 @@ class Database {
   }
 
   load() {
-    // Pure in-memory state initialization from cloud/seed
-    return JSON.parse(JSON.stringify(initialSeedData));
+    // Returns a CLEAN EMPTY STATE.
+    // Firebase real-time listener is the ONLY source of truth.
+    // NEVER pre-fill with mock sample data — empty DB = empty UI.
+    return {
+      pricingConfig: JSON.parse(JSON.stringify(initialSeedData.pricingConfig)),
+      concreteGrades: JSON.parse(JSON.stringify(initialSeedData.concreteGrades)),
+      salesVisits: [],
+      opportunities: [],
+      quotations: [],
+      orders: [],
+      deliveryLogs: [],
+      activityLog: [],
+      users: JSON.parse(JSON.stringify(initialSeedData.users)),
+      customerPricingRules: []
+    };
   }
 
   // Rule 3: Granular Mutations (Push only changed fields/nodes to Firebase)
