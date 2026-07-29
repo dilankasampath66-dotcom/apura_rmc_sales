@@ -3161,15 +3161,22 @@ window.openFirebaseConfigModal = function() {
   const modal = document.getElementById('modal-firebase-config');
   if (!modal) return;
 
+  let cfg = {
+    databaseURL: "https://apura-rmc-sales-default-rtdb.firebaseio.com",
+    apiKey: "AIzaSyDk-DO7OGwOk1LXMDS0PRskxzqx3wcIZu8",
+    projectId: "apura-rmc-sales"
+  };
+
   const storedCfg = localStorage.getItem('TMX_RMC_FIREBASE_CFG_V1');
   if (storedCfg) {
     try {
-      const cfg = JSON.parse(storedCfg);
-      if (cfg.databaseURL) document.getElementById('fb-config-dburl').value = cfg.databaseURL;
-      if (cfg.apiKey) document.getElementById('fb-config-apikey').value = cfg.apiKey;
-      if (cfg.projectId) document.getElementById('fb-config-projid').value = cfg.projectId;
+      cfg = { ...cfg, ...JSON.parse(storedCfg) };
     } catch (e) {}
   }
+
+  if (cfg.databaseURL) document.getElementById('fb-config-dburl').value = cfg.databaseURL;
+  if (cfg.apiKey) document.getElementById('fb-config-apikey').value = cfg.apiKey;
+  if (cfg.projectId) document.getElementById('fb-config-projid').value = cfg.projectId;
 
   modal.classList.remove('hidden');
 };

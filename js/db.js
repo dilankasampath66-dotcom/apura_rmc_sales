@@ -317,6 +317,16 @@ const initialSeedData = {
 const DB_KEY = 'TMX_RMC_DB_V1';
 const FIREBASE_CFG_KEY = 'TMX_RMC_FIREBASE_CFG_V1';
 
+const DEFAULT_FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDk-DO7OGwOk1LXMDS0PRskxzqx3wcIZu8",
+  authDomain: "apura-rmc-sales.firebaseapp.com",
+  databaseURL: "https://apura-rmc-sales-default-rtdb.firebaseio.com",
+  projectId: "apura-rmc-sales",
+  storageBucket: "apura-rmc-sales.firebasestorage.app",
+  messagingSenderId: "23882762737",
+  appId: "1:23882762737:web:2cd4fdf305ec9fe25e9c50"
+};
+
 class Database {
   constructor() {
     this.isFirebaseConnected = false;
@@ -348,22 +358,17 @@ class Database {
       if (typeof window.firebase === 'undefined') return;
 
       const storedCfg = localStorage.getItem(FIREBASE_CFG_KEY);
-      if (!storedCfg) {
-        this.updateFirebaseBadge('offline');
-        return;
-      }
-
-      const config = JSON.parse(storedCfg);
-      if (!config || !config.databaseURL) {
-        this.updateFirebaseBadge('offline');
-        return;
+      let config = storedCfg ? JSON.parse(storedCfg) : DEFAULT_FIREBASE_CONFIG;
+      if (!config || !config.projectId) {
+        config = DEFAULT_FIREBASE_CONFIG;
       }
 
       if (!window.firebase.apps.length) {
         window.firebase.initializeApp(config);
       }
 
-      this.fbRef = window.firebase.database().ref('rmc_plant_data');
+      const dbUrl = config.databaseURL || `https://${config.projectId}-default-rtdb.firebaseio.com`;
+      this.fbRef = window.firebase.app().database(dbUrl).ref('rmc_plant_data');
       this.isFirebaseConnected = true;
       this.updateFirebaseBadge('connected');
 
