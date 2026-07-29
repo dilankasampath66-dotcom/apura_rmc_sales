@@ -3,8 +3,6 @@
  * Handles in-memory CRUD operations with LocalStorage fallback, Master DB JSON export/import & seed data.
  */
 
-const DB_KEY = 'TMX_RMC_DB_V1';
-
 const initialSeedData = {
   pricingConfig: {
     free_transport_km: 15,
@@ -1303,4 +1301,13 @@ class Database {
   }
 }
 
-window.db = new Database();
+try {
+  window.db = new Database();
+} catch (e) {
+  console.error("Database initialization exception caught:", e);
+  try {
+    window.db = new Database();
+  } catch (err) {
+    console.error("Database fallback initialization failed:", err);
+  }
+}
