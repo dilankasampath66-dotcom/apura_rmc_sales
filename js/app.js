@@ -1500,29 +1500,36 @@ function renderVisits() {
   const canDelete = currentRole === 'Manager' || currentRole === 'Admin';
 
   if (tbody) {
+    if (!visits || visits.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" class="py-10 text-center text-slate-400 italic">No sales visits logged yet. Log your first visit using the form on the left.</td></tr>`;
+      return;
+    }
+
     tbody.innerHTML = visits.map(v => `
-      <tr class="border-b border-slate-200 text-xs sm:text-sm hover:bg-slate-50">
-        <td class="py-2.5 px-3 font-bold text-red-600">
-          <button onclick="openEditVisitModal(${v.id})" title="Click to edit Sales Visit entry #${v.id} (ID Fixed)" class="hover:underline cursor-pointer focus:outline-none flex items-center group">
+      <tr class="border-b border-slate-100 hover:bg-blue-50/50 transition">
+        <td class="py-3 px-3.5 font-bold text-blue-600 align-middle">
+          <button type="button" onclick="loadVisitForEditing(${v.id})" title="Click to load Visit #${v.id} into left form for editing" class="hover:underline cursor-pointer focus:outline-none flex items-center group font-mono">
             <span>#${v.id}</span>
-            <i class="fa-solid fa-pen-to-square text-[10px] text-slate-400 group-hover:text-red-600 ml-1"></i>
+            <i class="fa-solid fa-pen-to-square text-[10px] text-slate-400 group-hover:text-blue-600 ml-1"></i>
           </button>
         </td>
-        <td class="py-2.5 px-3 text-slate-600">${v.date}</td>
-        <td class="py-2.5 px-3 font-semibold text-slate-900">
-          <div>${v.customer_name}</div>
-          <div class="text-[10px] font-mono text-red-600 font-bold">📱 ${v.contact || 'N/A'}</div>
+        <td class="py-3 px-3.5 text-slate-600 align-middle font-mono whitespace-nowrap text-xs">${v.date}</td>
+        <td class="py-3 px-3.5 text-slate-900 align-middle">
+          <div class="font-bold text-slate-900">${v.customer_name}</div>
+          <div class="text-[10px] font-mono text-slate-500">📱 ${v.contact || 'N/A'} | 📍 ${v.location || 'N/A'}</div>
         </td>
-        <td class="py-2.5 px-3 font-bold text-slate-800"><span class="bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">${v.concrete_grade || 'M25'}</span></td>
-        <td class="py-2.5 px-3 text-slate-600">${v.sales_officer}</td>
-        <td class="py-2.5 px-3 text-blue-700 font-semibold">${v.project_size_m3} m³</td>
-        <td class="py-2.5 px-3 text-right space-x-1">
-          <button onclick="openEditVisitModal(${v.id})" title="Edit Sales Visit Entry (ID Fixed)" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-[11px] px-2 py-1 rounded transition cursor-pointer">
-            <i class="fa-solid fa-pen mr-1"></i> Edit
+        <td class="py-3 px-3.5 align-middle">
+          <span class="bg-blue-50 text-blue-800 border border-blue-200 px-2 py-0.5 rounded-md font-bold text-[10px]">${v.concrete_grade || 'M25'}</span>
+        </td>
+        <td class="py-3 px-3.5 text-slate-700 align-middle whitespace-nowrap font-medium text-xs">${v.sales_officer}</td>
+        <td class="py-3 px-3.5 text-emerald-700 font-extrabold align-middle whitespace-nowrap font-mono text-xs">${v.project_size_m3} m³</td>
+        <td class="py-3 px-3.5 text-right space-x-1.5 align-middle whitespace-nowrap">
+          <button type="button" onclick="loadVisitForEditing(${v.id})" title="Edit Sales Visit Entry #${v.id}" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-[10px] px-2.5 py-1 rounded-lg transition cursor-pointer font-bold inline-flex items-center gap-1">
+            <i class="fa-solid fa-pen"></i> Edit
           </button>
           ${canDelete ? `
-            <button onclick="deleteVisitEntry(${v.id})" title="Delete wrong entry (Manager/Admin action)" class="bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-[11px] px-2 py-1 rounded transition cursor-pointer">
-              <i class="fa-solid fa-trash mr-1"></i> Delete
+            <button type="button" onclick="deleteVisitEntry(${v.id})" title="Delete entry" class="bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-[10px] px-2 py-1 rounded-lg transition cursor-pointer font-bold">
+              <i class="fa-solid fa-trash"></i>
             </button>
           ` : ''}
         </td>
@@ -1530,6 +1537,86 @@ function renderVisits() {
     `).join('');
   }
 }
+
+window.loadVisitForEditing = function(visitId) {
+  const visit = window.db.getVisit(visitId);
+  if (!visit) {
+    showToast('Sales Visit entry not found.', 'error');
+    return;
+  }
+
+  const editIdEl = document.getElementById('visit-edit-id');
+  const dateEl = document.getElementById('visit-date');
+  const officerEl = document.getElementById('visit-officer');
+  const customerEl = document.getElementById('visit-customer');
+  const locationEl = document.getElementById('visit-location');
+  const contactEl = document.getElementById('visit-contact');
+  const gradeEl = document.getElementById('visit-grade');
+  const typeEl = document.getElementById('visit-type');
+  const distanceEl = document.getElementById('visit-distance');
+  const volumeEl = document.getElementById('visit-volume');
+  const notesEl = document.getElementById('visit-notes');
+
+  const titleEl = document.getElementById('visit-form-title');
+  const btnSubmit = document.getElementById('btn-submit-visit');
+  const btnCancel = document.getElementById('btn-cancel-visit-edit');
+
+  if (editIdEl) editIdEl.value = visit.id;
+  if (dateEl) dateEl.value = visit.date || '';
+  if (officerEl) officerEl.value = visit.sales_officer || '';
+  if (customerEl) customerEl.value = visit.customer_name || '';
+  if (locationEl) locationEl.value = visit.location || '';
+  if (contactEl) contactEl.value = visit.contact || '';
+  if (typeEl) typeEl.value = visit.customer_type || 'Commercial';
+  if (gradeEl) gradeEl.value = visit.concrete_grade || 'M20';
+  if (distanceEl) distanceEl.value = visit.distance_km || 10;
+  if (volumeEl) volumeEl.value = visit.project_size_m3 || 100;
+  if (notesEl) notesEl.value = visit.notes || '';
+
+  if (titleEl) {
+    titleEl.innerHTML = `<i class="fa-solid fa-pen-to-square text-blue-600 mr-2"></i> Edit Sales Visit #${visit.id}`;
+  }
+  if (btnSubmit) {
+    btnSubmit.innerHTML = `<i class="fa-solid fa-pen-to-square mr-1.5"></i> Update Sales Visit #${visit.id}`;
+    btnSubmit.className = 'w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold py-2.5 rounded-xl text-xs transition cursor-pointer shadow-md flex items-center justify-center';
+  }
+  if (btnCancel) {
+    btnCancel.classList.remove('hidden');
+  }
+
+  updateVisitGradePriceBadge();
+
+  const formEl = document.getElementById('form-add-visit');
+  if (formEl) {
+    formEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  showToast(`Loaded Sales Visit #${visit.id} for editing.`, 'info');
+};
+
+window.cancelVisitEdit = function() {
+  const formEl = document.getElementById('form-add-visit');
+  const editIdEl = document.getElementById('visit-edit-id');
+  const titleEl = document.getElementById('visit-form-title');
+  const btnSubmit = document.getElementById('btn-submit-visit');
+  const btnCancel = document.getElementById('btn-cancel-visit-edit');
+
+  if (formEl) formEl.reset();
+  if (editIdEl) editIdEl.value = '';
+
+  if (titleEl) {
+    titleEl.innerHTML = `<i class="fa-solid fa-plus-circle text-red-600 mr-2"></i> Log New Sales Visit`;
+  }
+  if (btnSubmit) {
+    btnSubmit.innerHTML = `<i class="fa-solid fa-check-circle mr-1.5"></i> Save Visit &amp; Auto-Create CRM Lead`;
+    btnSubmit.className = 'w-full bg-red-600 hover:bg-red-700 text-white font-extrabold py-2.5 rounded-xl text-xs transition cursor-pointer shadow-md flex items-center justify-center';
+  }
+  if (btnCancel) {
+    btnCancel.classList.add('hidden');
+  }
+
+  updateVisitGradePriceBadge();
+};
 
 window.openEditVisitModal = function(visitId) {
   const visit = window.db.getVisit(visitId);
@@ -1763,43 +1850,59 @@ function bindFormHandlers() {
         return;
       }
 
-      const dupCheck = window.rulesEngine.checkDuplicateVisit(formData.customer_name, formData.date);
-      if (dupCheck.isDuplicate) {
-        showToast(dupCheck.message, 'warning');
+      const visitEditId = document.getElementById('visit-edit-id')?.value;
+
+      if (visitEditId) {
+        // UPDATE EXISTING VISIT
+        const updatedVisit = window.db.updateVisit(visitEditId, formData);
+        window.db.logActivity(
+          'VISIT_UPDATED',
+          formData.sales_officer,
+          `Updated Sales Visit #${visitEditId} for "${formData.customer_name}" (Grade: ${selectedGrade}, ${formData.project_size_m3}m³)`
+        );
+        showToast(`✅ Sales Visit #${visitEditId} updated successfully!`, 'success');
+        cancelVisitEdit();
+        renderVisits();
+      } else {
+        // CREATE NEW VISIT
+        const dupCheck = window.rulesEngine.checkDuplicateVisit(formData.customer_name, formData.date);
+        if (dupCheck.isDuplicate) {
+          showToast(dupCheck.message, 'warning');
+        }
+
+        const newVisit = window.db.addVisit(formData);
+
+        const baseCalc = window.pricingEngine.calculatePrice({
+          concreteGrade: selectedGrade,
+          distanceKm: formData.distance_km,
+          pumpRequired: true,
+          volumeM3: formData.project_size_m3
+        });
+
+        const newOpp = window.db.addOpportunity({
+          visit_id: newVisit.id,
+          customer_name: formData.customer_name,
+          contact: formData.contact,
+          distance_km: formData.distance_km,
+          sales_officer: formData.sales_officer,
+          concrete_grade: selectedGrade,
+          stage: 'Lead',
+          expected_volume_m3: formData.project_size_m3,
+          expected_value_lkr: baseCalc.totalValue,
+          probability: 30
+        });
+
+        window.db.logActivity(
+          'VISIT_AND_LEAD_CREATED',
+          formData.sales_officer,
+          `Created Sales Visit #${newVisit.id} & Opportunity #${newOpp.id} for "${formData.customer_name}" (Grade: ${selectedGrade}, ${formData.project_size_m3}m³)`
+        );
+
+        showToast(`Sales Visit & Opportunity Lead (Grade ${selectedGrade}) created!`, 'success');
+        formVisit.reset();
+        populateGradeDropdowns();
+        switchView('pipeline');
       }
-
-      const newVisit = window.db.addVisit(formData);
-
-      const baseCalc = window.pricingEngine.calculatePrice({
-        concreteGrade: selectedGrade,
-        distanceKm: formData.distance_km,
-        pumpRequired: true,
-        volumeM3: formData.project_size_m3
-      });
-
-      const newOpp = window.db.addOpportunity({
-        visit_id: newVisit.id,
-        customer_name: formData.customer_name,
-        contact: formData.contact,
-        distance_km: formData.distance_km,
-        sales_officer: formData.sales_officer,
-        concrete_grade: selectedGrade,
-        stage: 'Lead',
-        expected_volume_m3: formData.project_size_m3,
-        expected_value_lkr: baseCalc.totalValue,
-        probability: 30
-      });
-
-      window.db.logActivity(
-        'VISIT_AND_LEAD_CREATED',
-        formData.sales_officer,
-        `Created Sales Visit #${newVisit.id} & Opportunity #${newOpp.id} for "${formData.customer_name}" (Grade: ${selectedGrade}, ${formData.project_size_m3}m³)`
-      );
-
-      showToast(`Sales Visit & Opportunity Lead (Grade ${selectedGrade}) created!`, 'success');
-      formVisit.reset();
-      populateGradeDropdowns();
-      switchView('pipeline');
     });
   }
 }
