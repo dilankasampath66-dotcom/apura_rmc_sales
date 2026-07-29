@@ -34,6 +34,14 @@ function initApp() {
 
   // Check user authentication session on project start
   checkAuthSession();
+
+  // Initialize Route based on URL Hash or default to dashboard
+  const initialHash = window.location.hash.replace('#', '').trim();
+  if (initialHash && VALID_VIEWS.includes(initialHash)) {
+    switchView(initialHash, false);
+  } else {
+    switchView('dashboard', false);
+  }
 }
 
 /**
@@ -658,8 +666,22 @@ window.toggleMobileNavDrawer = function(e) {
   if (drawer) drawer.classList.toggle('hidden');
 };
 
+const VALID_VIEWS = ['dashboard', 'visits', 'pipeline', 'quotation', 'orders', 'activity', 'users', 'master-db', 'auto-qa'];
+
+const VIEW_TITLES = {
+  'dashboard': 'Executive Dashboard & Insights | RMC Plant System',
+  'visits': 'Sales Visits Log | RMC Plant System',
+  'pipeline': 'CRM Pipeline Kanban | RMC Plant System',
+  'quotation': 'Pricing Engine & Rules | RMC Plant System',
+  'orders': 'Orders & Delivery Logs | RMC Plant System',
+  'activity': 'System Activity Audit Log | RMC Plant System',
+  'users': 'User Management & Roles | RMC Plant System',
+  'master-db': 'Master Database Inspector | RMC Plant System',
+  'auto-qa': 'Auto QA Test Suite | RMC Plant System'
+};
+
 /**
- * Navigation handler (Desktop & Mobile Tabs & Mobile Drawer)
+ * Navigation handler (Desktop & Mobile Tabs & Mobile Drawer & URL Hash Router)
  */
 function bindNavigation() {
   const navItems = document.querySelectorAll('.nav-link, .mobile-nav-link, .mobile-drawer-link');
@@ -668,7 +690,7 @@ function bindNavigation() {
       e.preventDefault();
       const targetView = item.getAttribute('data-view');
       if (targetView) {
-        switchView(targetView);
+        switchView(targetView, true);
         const drawer = document.getElementById('mobile-nav-drawer');
         if (drawer && !drawer.classList.contains('hidden')) {
           drawer.classList.add('hidden');
@@ -676,14 +698,34 @@ function bindNavigation() {
       }
     });
   });
+
+  // Listen to browser Back/Forward navigation (Hash Routing)
+  window.addEventListener('hashchange', () => {
+    const hash = window.location.hash.replace('#', '').trim();
+    if (hash && VALID_VIEWS.includes(hash)) {
+      switchView(hash, false);
+    }
+  });
 }
 
-function switchView(viewName) {
+function switchView(viewName, updateHash = true) {
+  if (!VALID_VIEWS.includes(viewName)) {
+    viewName = 'dashboard';
+  }
   activeView = viewName;
-  document.querySelectorAll('.view-panel').forEach(panel => {
+
+  // 1. Hide ALL view panels completely to eliminate section shifting and content jumping
+  document.querySelectorAll('.view-panel, .view-content').forEach(panel => {
     panel.classList.add('hidden');
   });
 
+  // 2. Reveal target view panel cleanly
+  const activePanel = document.getElementById(`view-${viewName}`);
+  if (activePanel) {
+    activePanel.classList.remove('hidden');
+  }
+
+  // 3. Highlight Desktop Sidebar active item
   document.querySelectorAll('.nav-link').forEach(link => {
     link.classList.remove('bg-slate-100', 'text-red-600', 'border-l-4', 'border-red-600');
     if (link.getAttribute('data-view') === viewName) {
@@ -691,6 +733,7 @@ function switchView(viewName) {
     }
   });
 
+  // 4. Highlight Mobile Bottom Nav active item
   document.querySelectorAll('.mobile-nav-link').forEach(link => {
     link.classList.remove('text-red-600', 'font-bold');
     link.classList.add('text-slate-500', 'font-medium');
@@ -700,11 +743,34 @@ function switchView(viewName) {
     }
   });
 
-  const activePanel = document.getElementById(`view-${viewName}`);
-  if (activePanel) activePanel.classList.remove('hidden');
+  // 5. Highlight Mobile Drawer active item
+  document.querySelectorAll('.mobile-drawer-link').forEach(link => {
+    link.classList.remove('bg-slate-100', 'text-red-600', 'font-bold');
+    if (link.getAttribute('data-view') === viewName) {
+      link.classList.add('bg-slate-100', 'text-red-600', 'font-bold');
+    }
+  });
 
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  // 6. Update URL Hash & Document Title for Multi-Page Standard Compliance
+  if (updateHash && window.location.hash !== `#${viewName}`) {
+    if (history.pushState) {
+      history.pushState(null, '', `#${viewName}`);
+    } else {
+      window.location.hash = `#${viewName}`;
+    }
+  }
 
+  if (VIEW_TITLES[viewName]) {
+    document.title = VIEW_TITLES[viewName];
+  }
+
+  // 7. Scroll top on main view container
+  const mainEl = document.querySelector('main');
+  if (mainEl) {
+    mainEl.scrollTop = 0;
+  }
+
+  // 8. Re-render active view content
   renderCurrentView();
 }
 
