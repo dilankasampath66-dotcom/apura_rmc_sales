@@ -143,13 +143,15 @@ class Database {
     if (!data.opportunities) data.opportunities = [];
 
     // --- Self-Healing Sync: Ensure every salesVisit has a corresponding Opportunity in CRM Pipeline ---
+    // FIX (Task 01 — Deduplication): Match strictly by visit_id only.
+    // The previous OR-chain (contact / customer_name) caused race-condition ghost duplicates
+    // when Firebase synced before the newly-saved opportunity arrived in the snapshot.
     if (Array.isArray(data.salesVisits) && data.salesVisits.length > 0) {
       data.salesVisits.forEach(v => {
         if (!v || !v.customer_name) return;
         const vId = Number(v.id);
-        const exists = data.opportunities.some(o => 
-          o && (Number(o.visit_id) === vId || (v.contact && String(o.contact).trim() === String(v.contact).trim()) || (o.customer_name && o.customer_name.trim().toLowerCase() === v.customer_name.trim().toLowerCase()))
-        );
+        // Strict visit_id match only — no loose name/contact comparison
+        const exists = data.opportunities.some(o => o && Number(o.visit_id) === vId);
         if (!exists) {
           const vol = Number(v.project_size_m3) || 30;
           const grade = v.concrete_grade || 'M20';
@@ -172,6 +174,35 @@ class Database {
           });
         }
       });
+    }
+
+    // --- Deduplication Pass: Remove exact visit_id duplicates (1:1 visit-to-opportunity mapping) ---
+    // If multiple opportunities share the same visit_id, keep only the most advanced / most recent one.
+    if (Array.isArray(data.opportunities) && data.opportunities.length > 0) {
+      const oppByVisitId = {};
+      const noVisitOpps = [];
+      data.opportunities.forEach(o => {
+        if (!o) return;
+        const vid = o.visit_id !== undefined && o.visit_id !== null ? Number(o.visit_id) : null;
+        if (vid === null || isNaN(vid)) {
+          noVisitOpps.push(o);
+          return;
+        }
+        if (!oppByVisitId[vid]) {
+          oppByVisitId[vid] = o;
+        } else {
+          // Keep the record that is further along the pipeline or was updated more recently
+          const stageRank = { 'Lead': 1, 'Quote': 2, 'Negotiation': 3, 'Won': 4, 'Lost': 0 };
+          const existingRank = stageRank[oppByVisitId[vid].stage] || 0;
+          const incomingRank = stageRank[o.stage] || 0;
+          const existingTime = oppByVisitId[vid].updated_at ? new Date(oppByVisitId[vid].updated_at).getTime() : 0;
+          const incomingTime = o.updated_at ? new Date(o.updated_at).getTime() : 0;
+          if (incomingRank > existingRank || (incomingRank === existingRank && incomingTime > existingTime)) {
+            oppByVisitId[vid] = o;
+          }
+        }
+      });
+      data.opportunities = Object.values(oppByVisitId).concat(noVisitOpps);
     }
 
     // --- Normalize deliveryLogs ---

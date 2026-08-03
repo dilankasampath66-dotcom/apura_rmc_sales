@@ -230,7 +230,10 @@ function triggerHardwarePrint() {
 }
 
 /**
- * 100% Reliable Standalone PDF Generator
+ * 100% Reliable Standalone PDF Generator — Task 04 Fix
+ * Root cause: CSS 'mm' unit width is DPI-dependent for offsetHeight measurement.
+ * Fix: Use explicit 302px width (80mm @ 96 DPI baseline) and getBoundingClientRect()
+ *      for accurate page height calculation on all screens including Retina/HiDPI.
  */
 function exportThermalReceiptPDF() {
   const source = document.getElementById('modal-thermal-content');
@@ -244,32 +247,59 @@ function exportThermalReceiptPDF() {
 
   showToast('Generating exact-size 80mm PDF document...', 'info');
 
-  // Create an explicit off-screen DOM element sized specifically for 80mm thermal receipt
+  // Create an explicit off-screen DOM element
+  // Use 302px (= 80mm at standard 96 DPI) — reliable for html2canvas across all DPIs
   const pdfWrapper = document.createElement('div');
-  pdfWrapper.style.position = 'fixed';
-  pdfWrapper.style.left = '-9999px';
-  pdfWrapper.style.top = '0px';
-  pdfWrapper.style.width = '80mm';
-  pdfWrapper.style.boxSizing = 'border-box';
-  pdfWrapper.style.backgroundColor = '#ffffff';
-  pdfWrapper.style.color = '#000000';
-  pdfWrapper.style.padding = '3mm';
-  pdfWrapper.style.zIndex = '99999';
+  pdfWrapper.id = 'pdf-export-wrapper';
+  pdfWrapper.style.cssText = [
+    'position: fixed',
+    'left: -9999px',
+    'top: 0px',
+    'width: 302px',
+    'min-height: 100px',
+    'box-sizing: border-box',
+    'background-color: #ffffff',
+    'color: #000000',
+    'padding: 8px',
+    'z-index: 99999',
+    'font-family: "Courier New", Courier, monospace',
+    'font-size: 11px',
+    'line-height: 1.4',
+    'overflow: visible'
+  ].join(';');
 
-  // Inject receipt content with clean inline CSS
+  // Inject receipt content with inline styles preserved
   pdfWrapper.innerHTML = source.innerHTML;
   document.body.appendChild(pdfWrapper);
 
-  // Measure exact rendered height in mm (1px ~ 0.264583mm)
-  const elementHeightPx = pdfWrapper.offsetHeight || 500;
-  const elementHeightMm = Math.ceil(elementHeightPx * 0.264583) + 6;
+  // Use getBoundingClientRect for accurate pixel height (DPI-independent)
+  // Force a reflow before measuring
+  pdfWrapper.getBoundingClientRect();
+  const elementHeightPx = pdfWrapper.scrollHeight || pdfWrapper.offsetHeight || 600;
+  // Convert px to mm: 1mm = 3.7795275591 px at 96 DPI
+  const PX_PER_MM = 96 / 25.4;
+  const elementHeightMm = Math.ceil(elementHeightPx / PX_PER_MM) + 10; // 10mm safety margin
 
   const opt = {
-    margin:       [2, 2, 2, 2],
-    filename:     fileName,
-    image:        { type: 'jpeg', quality: 0.98 },
-    html2canvas:  { scale: 3, useCORS: true, backgroundColor: '#ffffff', logging: false },
-    jsPDF:        { unit: 'mm', format: [80, Math.max(100, elementHeightMm)], orientation: 'portrait' }
+    margin:      [3, 3, 3, 3],
+    filename:    fileName,
+    image:       { type: 'jpeg', quality: 0.97 },
+    html2canvas: {
+      scale:        2,
+      useCORS:      true,
+      allowTaint:   true,
+      backgroundColor: '#ffffff',
+      logging:      false,
+      windowWidth:  302,
+      scrollX:      0,
+      scrollY:      0,
+      letterRendering: true
+    },
+    jsPDF: {
+      unit:        'mm',
+      format:      [80, Math.max(120, elementHeightMm)],
+      orientation: 'portrait'
+    }
   };
 
   if (window.html2pdf) {
@@ -288,6 +318,7 @@ function exportThermalReceiptPDF() {
     window.print();
   }
 }
+
 
 function shareThermalReceiptWhatsApp() {
   let grade = document.getElementById('quote-grade') ? document.getElementById('quote-grade').value : 'M20';
@@ -2925,22 +2956,85 @@ window.deleteOrderEntry = function(orderId) {
 };
 
 /**
- * ACTIVITY LOG SCREEN
+ * ACTIVITY LOG SCREEN — with Sales Officer & Date Range filter (Task 03)
  */
 function renderActivityLogScreen() {
-  const logs = window.db.getLogs();
+  let logs = window.db.getLogs();
   const tbody = document.getElementById('table-activity-body');
-  if (tbody) {
-    tbody.innerHTML = logs.map(l => `
-      <tr class="border-b border-slate-200 text-xs sm:text-sm hover:bg-slate-50">
-        <td class="py-2.5 px-3 text-[11px] font-mono text-slate-500">${l.timestamp}</td>
-        <td class="py-2.5 px-3"><span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 border border-slate-300 text-slate-700">${l.action}</span></td>
-        <td class="py-2.5 px-3 text-slate-700">${l.user}</td>
-        <td class="py-2.5 px-3 text-slate-800 text-[11px]">${l.details}</td>
-      </tr>
-    `).join('');
+  if (!tbody) return;
+
+  // --- Populate Officer Dropdown (once) ---
+  const officerSelect = document.getElementById('activity-filter-officer');
+  if (officerSelect && officerSelect.options.length <= 1) {
+    const uniqueUsers = [...new Set(logs.map(l => l.user).filter(Boolean))].sort();
+    uniqueUsers.forEach(u => {
+      const opt = document.createElement('option');
+      opt.value = u;
+      opt.textContent = u;
+      officerSelect.appendChild(opt);
+    });
   }
+
+  // --- Read Filter Values ---
+  const filterOfficer = officerSelect ? officerSelect.value : '';
+  const filterDateFrom = document.getElementById('activity-filter-date-from')
+    ? document.getElementById('activity-filter-date-from').value : '';
+  const filterDateTo = document.getElementById('activity-filter-date-to')
+    ? document.getElementById('activity-filter-date-to').value : '';
+
+  // --- Apply Filters ---
+  if (filterOfficer) {
+    logs = logs.filter(l => (l.user || '') === filterOfficer);
+  }
+  if (filterDateFrom) {
+    logs = logs.filter(l => {
+      if (!l.timestamp) return false;
+      const logDate = String(l.timestamp).substring(0, 10);
+      return logDate >= filterDateFrom;
+    });
+  }
+  if (filterDateTo) {
+    logs = logs.filter(l => {
+      if (!l.timestamp) return false;
+      const logDate = String(l.timestamp).substring(0, 10);
+      return logDate <= filterDateTo;
+    });
+  }
+
+  // --- Update filter count badge ---
+  const countBadge = document.getElementById('activity-filter-count');
+  if (countBadge) {
+    const isFiltered = filterOfficer || filterDateFrom || filterDateTo;
+    countBadge.textContent = isFiltered ? `Showing ${logs.length} result${logs.length !== 1 ? 's' : ''}` : '';
+  }
+
+  // --- Render Rows ---
+  if (logs.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="4" class="py-6 text-center text-xs text-slate-400 italic">No activity records match the selected filters.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = logs.map(l => `
+    <tr class="border-b border-slate-200 text-xs sm:text-sm hover:bg-slate-50">
+      <td class="py-2.5 px-3 text-[11px] font-mono text-slate-500">${l.timestamp}</td>
+      <td class="py-2.5 px-3"><span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 border border-slate-300 text-slate-700">${l.action}</span></td>
+      <td class="py-2.5 px-3 text-slate-700">${l.user}</td>
+      <td class="py-2.5 px-3 text-slate-800 text-[11px]">${l.details}</td>
+    </tr>
+  `).join('');
 }
+
+window.clearActivityFilters = function() {
+  const officerSelect = document.getElementById('activity-filter-officer');
+  const dateFrom = document.getElementById('activity-filter-date-from');
+  const dateTo = document.getElementById('activity-filter-date-to');
+  if (officerSelect) officerSelect.value = '';
+  if (dateFrom) dateFrom.value = '';
+  if (dateTo) dateTo.value = '';
+  renderActivityLogScreen();
+};
+
+
 
 /**
  * AUTO QA SIMULATION LISTENER & VIEW
