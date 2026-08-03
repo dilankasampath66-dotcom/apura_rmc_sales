@@ -230,10 +230,19 @@ function triggerHardwarePrint() {
 }
 
 /**
- * 100% Reliable Standalone PDF Generator — Task 04 Fix
- * Root cause: CSS 'mm' unit width is DPI-dependent for offsetHeight measurement.
- * Fix: Use explicit 302px width (80mm @ 96 DPI baseline) and getBoundingClientRect()
- *      for accurate page height calculation on all screens including Retina/HiDPI.
+ * 100% Reliable 80mm PDF Generator — Definitive Fix
+ *
+ * ROOT CAUSE OF BLANK PAGE:
+ *   html2canvas captures content relative to the browser VIEWPORT.
+ *   Placing the wrapper at `left: -9999px` puts it OUTSIDE the captured
+ *   area → blank canvas → blank PDF page. This affects all DPI levels.
+ *
+ * FIX:
+ *   Position the wrapper at top:0 left:0 with z-index:-99999 and
+ *   pointer-events:none. It renders in the visible layout area (so
+ *   html2canvas captures it) but sits visually BEHIND all UI chrome.
+ *   Set explicit pixel width (302px = 80mm @96 DPI) and capture
+ *   height via scrollHeight for DPI accuracy.
  */
 function exportThermalReceiptPDF() {
   const source = document.getElementById('modal-thermal-content');
@@ -242,58 +251,60 @@ function exportThermalReceiptPDF() {
     return;
   }
 
-  let grade = document.getElementById('quote-grade') ? document.getElementById('quote-grade').value : 'M25';
+  // Remove any leftover wrapper from a previous aborted export
+  const stale = document.getElementById('pdf-export-wrapper');
+  if (stale) document.body.removeChild(stale);
+
+  const grade = document.getElementById('quote-grade') ? document.getElementById('quote-grade').value : 'M25';
   const fileName = `Regional_Plant_80mm_Estimate_${grade}_${new Date().toISOString().substring(0, 10)}.pdf`;
 
-  showToast('Generating exact-size 80mm PDF document...', 'info');
+  showToast('Generating 80mm PDF...', 'info');
 
-  // Create an explicit off-screen DOM element
-  // Use 302px (= 80mm at standard 96 DPI) — reliable for html2canvas across all DPIs
+  // Place wrapper at top-left corner, BEHIND all UI, inside the captured viewport
   const pdfWrapper = document.createElement('div');
   pdfWrapper.id = 'pdf-export-wrapper';
   pdfWrapper.style.cssText = [
     'position: fixed',
-    'left: -9999px',
-    'top: 0px',
-    'width: 302px',
+    'top: 0',
+    'left: 0',               // Must be 0 — negative values push outside viewport capture area
+    'width: 302px',          // 80mm at 96 DPI
     'min-height: 100px',
     'box-sizing: border-box',
     'background-color: #ffffff',
     'color: #000000',
     'padding: 8px',
-    'z-index: 99999',
+    'z-index: -99999',       // Behind all UI — visually invisible to user
+    'pointer-events: none',  // Non-interactive
     'font-family: "Courier New", Courier, monospace',
     'font-size: 11px',
     'line-height: 1.4',
     'overflow: visible'
   ].join(';');
 
-  // Inject receipt content with inline styles preserved
   pdfWrapper.innerHTML = source.innerHTML;
   document.body.appendChild(pdfWrapper);
 
-  // Use getBoundingClientRect for accurate pixel height (DPI-independent)
-  // Force a reflow before measuring
-  pdfWrapper.getBoundingClientRect();
+  // Force layout reflow before measuring
+  void pdfWrapper.offsetHeight;
   const elementHeightPx = pdfWrapper.scrollHeight || pdfWrapper.offsetHeight || 600;
-  // Convert px to mm: 1mm = 3.7795275591 px at 96 DPI
-  const PX_PER_MM = 96 / 25.4;
-  const elementHeightMm = Math.ceil(elementHeightPx / PX_PER_MM) + 10; // 10mm safety margin
+  const PX_PER_MM = 96 / 25.4;  // 1 mm = 3.7795px at 96 DPI baseline
+  const elementHeightMm = Math.ceil(elementHeightPx / PX_PER_MM) + 12;
 
   const opt = {
     margin:      [3, 3, 3, 3],
     filename:    fileName,
     image:       { type: 'jpeg', quality: 0.97 },
     html2canvas: {
-      scale:        2,
-      useCORS:      true,
-      allowTaint:   true,
-      backgroundColor: '#ffffff',
-      logging:      false,
-      windowWidth:  302,
-      scrollX:      0,
-      scrollY:      0,
-      letterRendering: true
+      scale:            2,
+      useCORS:          true,
+      allowTaint:       true,
+      backgroundColor:  '#ffffff',
+      logging:          false,
+      width:            302,
+      windowWidth:      302,
+      scrollX:          0,
+      scrollY:          0,
+      letterRendering:  true
     },
     jsPDF: {
       unit:        'mm',
@@ -302,19 +313,25 @@ function exportThermalReceiptPDF() {
     }
   };
 
-  if (window.html2pdf) {
-    window.html2pdf().set(opt).from(pdfWrapper).save().then(() => {
-      if (document.body.contains(pdfWrapper)) document.body.removeChild(pdfWrapper);
-      window.db.logActivity('PDF_EXPORT_QUOTATION', currentRole, `Exported Cost Estimate 80mm PDF: ${fileName}`);
-      showToast(`Exact-size 80mm PDF document saved (${fileName})!`, 'success');
-    }).catch(err => {
-      if (document.body.contains(pdfWrapper)) document.body.removeChild(pdfWrapper);
-      console.error('PDF Export Error:', err);
-      showToast('Opening print dialog for 80mm PDF export...', 'warning');
-      window.print();
-    });
-  } else {
+  const cleanup = () => {
     if (document.body.contains(pdfWrapper)) document.body.removeChild(pdfWrapper);
+  };
+
+  if (window.html2pdf) {
+    window.html2pdf().set(opt).from(pdfWrapper).save()
+      .then(() => {
+        cleanup();
+        window.db.logActivity('PDF_EXPORT_QUOTATION', currentRole, `Exported 80mm PDF: ${fileName}`);
+        showToast(`80mm PDF saved: ${fileName}`, 'success');
+      })
+      .catch(err => {
+        cleanup();
+        console.error('PDF Export Error:', err);
+        showToast('Opening print dialog as fallback...', 'warning');
+        window.print();
+      });
+  } else {
+    cleanup();
     window.print();
   }
 }
@@ -1594,53 +1611,98 @@ window.saveOpportunityStageChange = function(oppId) {
  * SALES VISITS VIEW & FORM
  */
 function renderVisits() {
-  const visits = window.db.getVisits();
+  let visits = window.db.getVisits();
   const tbody = document.getElementById('table-visits-body');
   const roleStr = String(currentRole || (currentUser ? currentUser.role : '')).toLowerCase();
   const canDelete = roleStr.includes('admin') || roleStr.includes('manager');
 
-  if (tbody) {
-    if (!visits || visits.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="7" class="py-10 text-center text-slate-400 italic">No sales visits logged yet. Log your first visit using the form on the left.</td></tr>`;
-      return;
-    }
+  if (!tbody) return;
 
-    tbody.innerHTML = visits.map(v => `
-      <tr class="border-b border-slate-100 hover:bg-blue-50/50 transition">
-        <td class="py-3 px-3.5 font-bold text-blue-600 align-middle">
-          <button type="button" onclick="loadVisitForEditing(${v.id})" title="Click to load Visit #${v.id} into left form for editing" class="hover:underline cursor-pointer focus:outline-none flex items-center group font-mono">
-            <span>#${v.id}</span>
-            <i class="fa-solid fa-pen-to-square text-[10px] text-slate-400 group-hover:text-blue-600 ml-1"></i>
-          </button>
-        </td>
-        <td class="py-3 px-3.5 text-slate-600 align-middle font-mono whitespace-nowrap text-xs">${v.date}</td>
-        <td class="py-3 px-3.5 text-slate-900 align-middle">
-          <div class="font-bold text-slate-900">${v.customer_name}</div>
-          <div class="text-[10px] font-mono text-slate-500 flex flex-wrap gap-1 items-center">
-            <span>📱 ${v.contact || 'N/A'}</span>
-            <span>| 📍 ${v.location || 'N/A'}</span>
-            ${v.map_link ? `<a href="${v.map_link}" target="_blank" onclick="event.stopPropagation()" class="text-blue-600 font-bold hover:underline ml-1">🗺️ Map Link</a>` : ''}
-          </div>
-        </td>
-        <td class="py-3 px-3.5 align-middle">
-          <span class="bg-blue-50 text-blue-800 border border-blue-200 px-2 py-0.5 rounded-md font-bold text-[10px]">${v.concrete_grade || 'M25'}</span>
-        </td>
-        <td class="py-3 px-3.5 text-slate-700 align-middle whitespace-nowrap font-medium text-xs">${v.sales_officer}</td>
-        <td class="py-3 px-3.5 text-emerald-700 font-extrabold align-middle whitespace-nowrap font-mono text-xs">${v.project_size_m3} m³</td>
-        <td class="py-3 px-3.5 text-right space-x-1.5 align-middle whitespace-nowrap">
-          <button type="button" onclick="loadVisitForEditing(${v.id})" title="Edit Sales Visit Entry #${v.id}" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-[10px] px-2.5 py-1 rounded-lg transition cursor-pointer font-bold inline-flex items-center gap-1">
-            <i class="fa-solid fa-pen"></i> Edit
-          </button>
-          ${canDelete ? `
-            <button type="button" onclick="deleteVisitEntry(${v.id})" title="Delete entry" class="bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-[10px] px-2 py-1 rounded-lg transition cursor-pointer font-bold">
-              <i class="fa-solid fa-trash"></i>
-            </button>
-          ` : ''}
-        </td>
-      </tr>
-    `).join('');
+  // --- Populate Officer Dropdown (once) ---
+  const officerSelect = document.getElementById('visits-filter-officer');
+  if (officerSelect && officerSelect.options.length <= 1) {
+    const uniqueOfficers = [...new Set((visits || []).map(v => v.sales_officer).filter(Boolean))].sort();
+    uniqueOfficers.forEach(o => {
+      const opt = document.createElement('option');
+      opt.value = o;
+      opt.textContent = o;
+      officerSelect.appendChild(opt);
+    });
   }
+
+  // --- Read Filter Values ---
+  const filterOfficer  = officerSelect ? officerSelect.value : '';
+  const filterDateFrom = document.getElementById('visits-filter-date-from')
+    ? document.getElementById('visits-filter-date-from').value : '';
+  const filterDateTo   = document.getElementById('visits-filter-date-to')
+    ? document.getElementById('visits-filter-date-to').value   : '';
+
+  // --- Apply Filters ---
+  if (filterOfficer)  visits = visits.filter(v => (v.sales_officer || '') === filterOfficer);
+  if (filterDateFrom) visits = visits.filter(v => v.date && v.date >= filterDateFrom);
+  if (filterDateTo)   visits = visits.filter(v => v.date && v.date <= filterDateTo);
+
+  // --- Update count badge ---
+  const countBadge = document.getElementById('visits-filter-count');
+  if (countBadge) {
+    const isFiltered = filterOfficer || filterDateFrom || filterDateTo;
+    countBadge.textContent = isFiltered ? `Showing ${visits.length} visit${visits.length !== 1 ? 's' : ''}` : '';
+  }
+
+  // --- Render Rows ---
+  if (!visits || visits.length === 0) {
+    const emptyMsg = (filterOfficer || filterDateFrom || filterDateTo)
+      ? 'No visits match the selected filters.'
+      : 'No sales visits logged yet. Log your first visit using the form on the left.';
+    tbody.innerHTML = `<tr><td colspan="7" class="py-10 text-center text-slate-400 italic">${emptyMsg}</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = visits.map(v => `
+    <tr class="border-b border-slate-100 hover:bg-blue-50/50 transition">
+      <td class="py-3 px-3.5 font-bold text-blue-600 align-middle">
+        <button type="button" onclick="loadVisitForEditing(${v.id})" title="Click to load Visit #${v.id} into left form for editing" class="hover:underline cursor-pointer focus:outline-none flex items-center group font-mono">
+          <span>#${v.id}</span>
+          <i class="fa-solid fa-pen-to-square text-[10px] text-slate-400 group-hover:text-blue-600 ml-1"></i>
+        </button>
+      </td>
+      <td class="py-3 px-3.5 text-slate-600 align-middle font-mono whitespace-nowrap text-xs">${v.date}</td>
+      <td class="py-3 px-3.5 text-slate-900 align-middle">
+        <div class="font-bold text-slate-900">${v.customer_name}</div>
+        <div class="text-[10px] font-mono text-slate-500 flex flex-wrap gap-1 items-center">
+          <span>📱 ${v.contact || 'N/A'}</span>
+          <span>| 📍 ${v.location || 'N/A'}</span>
+          ${v.map_link ? `<a href="${v.map_link}" target="_blank" onclick="event.stopPropagation()" class="text-blue-600 font-bold hover:underline ml-1">🗺️ Map Link</a>` : ''}
+        </div>
+      </td>
+      <td class="py-3 px-3.5 align-middle">
+        <span class="bg-blue-50 text-blue-800 border border-blue-200 px-2 py-0.5 rounded-md font-bold text-[10px]">${v.concrete_grade || 'M25'}</span>
+      </td>
+      <td class="py-3 px-3.5 text-slate-700 align-middle whitespace-nowrap font-medium text-xs">${v.sales_officer}</td>
+      <td class="py-3 px-3.5 text-emerald-700 font-extrabold align-middle whitespace-nowrap font-mono text-xs">${v.project_size_m3} m³</td>
+      <td class="py-3 px-3.5 text-right space-x-1.5 align-middle whitespace-nowrap">
+        <button type="button" onclick="loadVisitForEditing(${v.id})" title="Edit Sales Visit Entry #${v.id}" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-[10px] px-2.5 py-1 rounded-lg transition cursor-pointer font-bold inline-flex items-center gap-1">
+          <i class="fa-solid fa-pen"></i> Edit
+        </button>
+        ${canDelete ? `
+          <button type="button" onclick="deleteVisitEntry(${v.id})" title="Delete entry" class="bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-[10px] px-2 py-1 rounded-lg transition cursor-pointer font-bold">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        ` : ''}
+      </td>
+    </tr>
+  `).join('');
 }
+
+window.clearVisitsFilters = function() {
+  const sel  = document.getElementById('visits-filter-officer');
+  const from = document.getElementById('visits-filter-date-from');
+  const to   = document.getElementById('visits-filter-date-to');
+  if (sel)  sel.value  = '';
+  if (from) from.value = '';
+  if (to)   to.value   = '';
+  renderVisits();
+};
 
 window.loadVisitForEditing = function(visitId) {
   const visit = window.db.getVisit(visitId);

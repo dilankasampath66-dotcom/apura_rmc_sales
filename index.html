@@ -301,7 +301,29 @@
               </h2>
               <span class="text-[11px] text-slate-500 font-semibold">Click Visit # ID to edit entry</span>
             </div>
-            
+
+            <!-- Visits Filter Bar: Officer & Date Range -->
+            <div id="visits-filter-bar" class="flex flex-wrap items-end gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200">
+              <div class="flex flex-col min-w-[130px]">
+                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1">Sales Officer</label>
+                <select id="visits-filter-officer" onchange="renderVisits()" class="bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer">
+                  <option value="">— All Officers —</option>
+                </select>
+              </div>
+              <div class="flex flex-col min-w-[120px]">
+                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1">Date From</label>
+                <input type="date" id="visits-filter-date-from" onchange="renderVisits()" class="bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer" />
+              </div>
+              <div class="flex flex-col min-w-[120px]">
+                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1">Date To</label>
+                <input type="date" id="visits-filter-date-to" onchange="renderVisits()" class="bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer" />
+              </div>
+              <button onclick="clearVisitsFilters()" class="bg-slate-200 hover:bg-red-100 hover:text-red-700 text-slate-600 font-bold text-xs py-1.5 px-3 rounded-lg transition cursor-pointer border border-slate-300 flex items-center gap-1.5 self-end">
+                <i class="fa-solid fa-xmark text-[10px]"></i> Clear
+              </button>
+              <span id="visits-filter-count" class="text-[10px] text-slate-400 font-semibold self-end pb-0.5 ml-auto"></span>
+            </div>
+
             <div class="overflow-x-auto max-h-[70vh] min-h-[420px] overflow-y-auto custom-scrollbar border border-slate-200 rounded-xl bg-white shadow-2xs">
               <table class="w-full text-left border-collapse">
                 <thead class="bg-slate-100 sticky top-0 z-10 shadow-2xs">
