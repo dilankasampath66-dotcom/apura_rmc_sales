@@ -840,6 +840,12 @@ function switchView(viewName, updateHash = true) {
 function renderCurrentView() {
   updateHeaderKPIs();
 
+  // Sync Concrete Grade dropdowns from DB on every render cycle.
+  // This ensures the "Concrete Grade Picked" dropdown on the Sales Visits form
+  // always reflects whatever grades the Manager has added/updated/deleted in the
+  // Pricing & Rules configuration — including real-time Firebase push updates.
+  populateGradeDropdowns();
+
   switch (activeView) {
     case 'dashboard':
       renderDashboard();
@@ -872,6 +878,7 @@ function renderCurrentView() {
   // ALWAYS enforce role access after every render to prevent Firebase re-renders from exposing restricted content
   enforceRoleAccess();
 }
+
 
 /**
  * ROLE ACCESS CONTROL - Single Source of Truth for UI Visibility
